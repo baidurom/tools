@@ -1,0 +1,4 @@
+chmod 0777 /data/local/tmp/getfilesysteminfo
+/data/local/tmp/getfilesysteminfo --info /system > /data/local/tmp/system.info
+/data/local/tmp/getfilesysteminfo --link /system > /data/local/tmp/link.info
+exit 0

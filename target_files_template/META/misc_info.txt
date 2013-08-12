@@ -1,0 +1,9 @@
+recovery_api_version=3
+blocksize=0xffffffff
+boot_size=0x600000
+recovery_size=0x600000
+system_size=0x20100000   
+userdata_size=0x30100000
+extfs_sparse_flag=-s
+tool_extensions=.
+default_system_dev_certificate=tools/security/testkey
