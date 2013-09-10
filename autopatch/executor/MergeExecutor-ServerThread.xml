@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge>
+    <item action="ADD"
+          nearby=".method public run()V"
+          position="BELOW"
+          anchor="Lcom/android/server/am/ActivityManagerService;->setWindowManager(Lcom/android/server/wm/WindowManagerService;)V">
+    invoke-static {v4}, Lcom/baidu/service/YiServiceLoader;->main(Landroid/content/Context;)V
+    </item>
+</merge>

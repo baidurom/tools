@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://rom.baidu.com"
+    xmlns="http://rom.baidu.com">
+
+    <!-- Element Definition -->
+    <xs:element name="revision" type="RevisionType" />
+    <xs:element name="revise" type="ReviseType" />
+    <xs:element name="target" type="TargetType" />
+    <xs:element name="execute" type="ExecuteType"/>
+    <xs:element name="parameter" type="xs:string"/>
+
+    <!-- Attribute Definition -->
+    <xs:attribute name="require" type="RequireType" />
+    <xs:attribute name="description" type="xs:string" />
+    <xs:attribute name="path" type="xs:string" />
+    <xs:attribute name="action" type="ActionType" />
+    <xs:attribute name="script" type="ScriptType" />
+    <xs:attribute name="routine" type="xs:string" />
+
+    <!-- Simple Type Definition -->
+    <xs:simpleType name="RequireType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="MUST|OPTION"/>
+         </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="ActionType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="ADD|REPLACE|MERGE"/>
+         </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="ScriptType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="Python|Shell"/>
+         </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Complex Type Definition -->
+    <xs:complexType name="RevisionType">
+        <xs:element ref="revise" />
+    </xs:complexType>
+
+    <xs:complexType name="ReviseType">
+        <xs:sequence>
+            <xs:attribute ref="require" />
+            <xs:attribute ref="decription" />
+            <xs:element ref="target" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="TargetType">
+        <xs:attribute ref="path" />
+        <xs:attribute ref="action" />
+        <xs:element ref="execute" />
+    </xs:complexType>
+
+    <xs:complexType name="ExecuteType">
+        <xs:attribute ref="script" />
+        <xs:attribute ref="routine" />
+        <xs:element ref="parameter" />
+    </xs:complexType>
+</xs:schema>

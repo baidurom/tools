@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge>
+    <item action="ADD"
+          position="BELOW"
+          anchor="# instance fields">
+.field protected final mLineControlInfoRegistrants:Landroid/os/RegistrantList;
+    </item>
+
+    <item action="ADD"
+          nearby=".method private constructor &lt;init&gt;()V"
+          position="OVER"
+          anchor="return-void">
+    new-instance v0, Landroid/os/RegistrantList;
+
+    invoke-direct {v0}, Landroid/os/RegistrantList;->&lt;init&gt;()V
+
+    iput-object v0, p0, Lcom/android/internal/telephony/CallManager;->mLineControlInfoRegistrants:Landroid/os/RegistrantList;
+    </item>
+
+    <item action="ADD"
+          position="OVER"
+          anchor="EOF">
+.method public registerForLineControlInfo(Landroid/os/Handler;ILjava/lang/Object;)V
+    .locals 1
+    .parameter "h"
+    .parameter "what"
+    .parameter "obj"
+
+    .prologue
+    .line 1455
+    iget-object v0, p0, Lcom/android/internal/telephony/CallManager;->mLineControlInfoRegistrants:Landroid/os/RegistrantList;
+
+    invoke-virtual {v0, p1, p2, p3}, Landroid/os/RegistrantList;->addUnique(Landroid/os/Handler;ILjava/lang/Object;)V
+
+    .line 1456
+    return-void
+.end method
+
+.method public unregisterForLineControlInfo(Landroid/os/Handler;)V
+    .locals 1
+    .parameter "h"
+
+    .prologue
+    .line 1460
+    iget-object v0, p0, Lcom/android/internal/telephony/CallManager;->mLineControlInfoRegistrants:Landroid/os/RegistrantList;
+
+    invoke-virtual {v0, p1}, Landroid/os/RegistrantList;->remove(Landroid/os/Handler;)V
+
+    .line 1461
+    return-void
+.end method
+    </item>
+
+</merge>

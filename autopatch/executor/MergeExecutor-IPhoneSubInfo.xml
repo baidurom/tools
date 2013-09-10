@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge>
+    <item action="ADD"
+          position="OVER"
+          anchor="EOF">
+.method public abstract getIccCardType()Ljava/lang/String;
+    .annotation system Ldalvik/annotation/Throws;
+        value = {
+            Landroid/os/RemoteException;
+        }
+    .end annotation
+.end method
+    </item>
+</merge>

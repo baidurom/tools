@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge>
+    <item action="ADD"
+          position="OVER"
+          anchor="EOF">
+.method public getIccCardType()Ljava/lang/String;
+    .locals 4
+
+    .prologue
+    .line 873
+    iget-object v2, p0, Lcom/android/internal/telephony/IccCard;->mIccCardStatus:Lcom/android/internal/telephony/IccCardStatus;
+
+    if-nez v2, :cond_0
+
+    const/4 v2, 0x0
+
+    .line 894
+    :goto_0
+    return-object v2
+
+    .line 875
+    :cond_0
+    const/4 v1, 0x0
+
+    .local v1, i:I
+    :goto_1
+    iget-object v2, p0, Lcom/android/internal/telephony/IccCard;->mIccCardStatus:Lcom/android/internal/telephony/IccCardStatus;
+
+    invoke-virtual {v2}, Lcom/android/internal/telephony/IccCardStatus;->getNumApplications()I
+
+    move-result v2
+
+    if-ge v1, v2, :cond_1
+
+    .line 876
+    iget-object v2, p0, Lcom/android/internal/telephony/IccCard;->mIccCardStatus:Lcom/android/internal/telephony/IccCardStatus;
+
+    invoke-virtual {v2, v1}, Lcom/android/internal/telephony/IccCardStatus;->getApplication(I)Lcom/android/internal/telephony/IccCardApplication;
+
+    move-result-object v0
+
+    .line 877
+    .local v0, app:Lcom/android/internal/telephony/IccCardApplication;
+    sget-object v2, Lcom/android/internal/telephony/IccCard$3;->$SwitchMap$com$android$internal$telephony$IccCardApplication$AppType:[I
+
+    iget-object v3, v0, Lcom/android/internal/telephony/IccCardApplication;->app_type:Lcom/android/internal/telephony/IccCardApplication$AppType;
+
+    invoke-virtual {v3}, Lcom/android/internal/telephony/IccCardApplication$AppType;->ordinal()I
+
+    move-result v3
+
+    aget v2, v2, v3
+
+    packed-switch v2, :pswitch_data_0
+
+    .line 875
+    add-int/lit8 v1, v1, 0x1
+
+    goto :goto_1
+
+    .line 879
+    :pswitch_0
+    const-string v2, "UNKNOWN"
+
+    goto :goto_0
+
+    .line 881
+    :pswitch_1
+    const-string v2, "SIM"
+
+    goto :goto_0
+
+    .line 883
+    :pswitch_2
+    const-string v2, "USIM"
+
+    goto :goto_0
+
+    .line 885
+    :pswitch_3
+    const-string v2, "RUIM"
+
+    goto :goto_0
+
+    .line 887
+    :pswitch_4
+    const-string v2, "CSIM"
+
+    goto :goto_0
+
+    .line 889
+    :pswitch_5
+    const-string v2, "ISIM"
+
+    goto :goto_0
+
+    .line 894
+    .end local v0           #app:Lcom/android/internal/telephony/IccCardApplication;
+    :cond_1
+    const-string v2, "UNKNOWN"
+
+    goto :goto_0
+
+    .line 877
+    :pswitch_data_0
+    .packed-switch 0x1
+        :pswitch_0
+        :pswitch_1
+        :pswitch_2
+        :pswitch_3
+        :pswitch_4
+        :pswitch_5
+    .end packed-switch
+.end method
+    </item>
+</merge>
