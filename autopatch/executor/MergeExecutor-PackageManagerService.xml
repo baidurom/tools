@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<merge>
-    <item action="ADD"
-          position="OVER"
-          anchor="\s*invoke-static/range {.*}, Lcom/android/server/pm/PackageManagerService;->isSystemApp\(Landroid/content/pm/PackageParser\$Package;\)Z\s+move-result .*\s+if-eqz .*, (.*)\s+invoke-static/range {.*}, Lcom/android/server/pm/PackageManagerService;->isUpdatedSystemApp\(Landroid/content/pm/PackageParser\$Package;\)Z"
-          match="REGEX">
-    goto %s
-    </item>
-</merge>

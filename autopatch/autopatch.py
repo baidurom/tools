@@ -1,16 +1,16 @@
 #!/usr/bin/python
-# Filename: Revision.py
+# Filename: autopatch.py
 
 ### File Information ###
 """
-Revise the files automatically based on the revision.xml.
+Patch the files automatically based on the autopatch.xsd.
 
-Usage: $shell Revision.py
-         Use the default baidu-revision.xml
+Usage: $shell autopatch.py
+         Use the default baidu_patch.xml
 
-       $shell Revision.py path_to_revision.xml
-         To provide a revision.xml, should firstly referenced to
-         the XML schema revision.xsd
+       $shell autopatch.py path_to_patch.xml
+         To provide a patch.xml, should firstly referenced to
+         the XML schema autopatch.xsd
 """
 
 __author__ = 'duanqizhi01@baidu.com (duanqz)'
@@ -33,22 +33,30 @@ except ImportError:
 
 ### Class definition ###
 
-class Main:
+class AutoPatch:
     """
-    Entry of the whole program.
+    Entry of the script.
     """
 
     def __init__(self):
-        revisionXML = self.getRevisionXML()
-        RevisionXML().parse(revisionXML)
+        argLen = len(sys.argv)
+        if argLen == 1:
+            patchesDir = Config.PATCHES_DIR
+            patchXML = Config.DEFAULT_REVISION_XML
+        elif argLen == 2:
+            patchesDir = Config.PATCHES_DIR
+            patchXML = sys.argv[1]
+        elif argLen >= 3:
+            patchesDir = sys.argv[1]
+            patchXML = sys.argv[2]
 
-    def getRevisionXML(self):
-        if len(sys.argv) >= 2:
-            revisionXML = sys.argv[1]
-        else:
-            revisionXML = Config.DEFAULT_REVISION_XML
+        AutoPatch.apply(patchesDir, patchXML)
 
-            return revisionXML
+    @staticmethod
+    def apply(patchesDir, patchXML):
+        Config.PATCHES_DIR = patchesDir
+        AutoPatchXML().parse(patchXML)
+        pass
 
 # End of class Main
 
@@ -58,18 +66,18 @@ class Config:
     """
     DEBUG = False
 
-    PROJECT_DIR = os.getcwd()
-    SCRIPT_DIR = sys.path[0]
+    PROJECT_DIR = os.getcwd() + "/"
+    SCRIPT_DIR = sys.path[0] + "/"
 
-    # Default revision.xml to be parsed
-    DEFAULT_REVISION_XML = SCRIPT_DIR + "/baidu-revision.xml"
+    # Default patch.xml to be parsed
+    DEFAULT_REVISION_XML = PROJECT_DIR + "baidu_patch.xml"
 
     # Source and destination directory holding the file to be handled
-    SOURCE_DIR = PROJECT_DIR + "/baidu/smali/"
-    TARGET_DIR = PROJECT_DIR + "/"
+    SOURCE_DIR = PROJECT_DIR + "baidu/smali/"
+    TARGET_DIR = PROJECT_DIR
 
-    # Executor directory
-    EXECUTOR_DIR = SCRIPT_DIR + "/executor/"
+    # Patches directory
+    PATCHES_DIR = PROJECT_DIR + "patches/"
 
     # Whether to revise OPTION feature, default to be True
     REVISE_OPTION = True
@@ -94,9 +102,9 @@ class Config:
         if targetDir != None:
             Config.SOURCE_DIR = targetDir.text
 
-        exeDir = Config.findAttrib(config, 'exe_dir')
-        if exeDir != None:
-            Config.EXECUTOR_DIR = exeDir.text
+        patchesDir = Config.findAttrib(config, 'patches_dir')
+        if patchesDir != None:
+            Config.PATCHES_DIR = patchesDir.text
 
         reviseOption = Config.findAttrib(config, 'revise_option')
         if reviseOption != None:
@@ -112,16 +120,15 @@ class Config:
     @staticmethod
     def toString():
         Log.i("--------------------------------------------")
-        Log.i("Revsion_XML\t=\t" + Config.DEFAULT_REVISION_XML)
         Log.i("Source_Dir\t=\t" + Config.SOURCE_DIR)
         Log.i("Target_Dir\t=\t" + Config.TARGET_DIR)
-        Log.i("Executor_Dir\t=\t" + Config.EXECUTOR_DIR)
+        Log.i("Patches_Dir\t=\t" + Config.PATCHES_DIR)
         Log.i("--------------------------------------------")
 
 # End of class Config
 
 
-class RevisionXML:
+class AutoPatchXML:
     """
     Represent the tree of an input XML.
     """
@@ -129,17 +136,19 @@ class RevisionXML:
     def __init__(self):
         pass
 
-    def parse(self, revisionXML):
+    def parse(self, autoPatchXML):
         """
-        Parse the XML with the schema defined in revision.xsd
+        Parse the XML with the schema defined in autopatch.xsd
         """
 
-        XMLDom = ET.parse(revisionXML)
+        XMLDom = ET.parse(autoPatchXML)
         Config.initConfigFrom(XMLDom)
-        Config.toString()
+        #Config.toString()
 
         for revise in XMLDom.findall('revise'):
             self.handleRevise(revise)
+
+        self.showRejectFilesIfNeeded()
 
     def handleRevise(self, revise):
         require = revise.attrib['require']
@@ -155,6 +164,13 @@ class RevisionXML:
             for target in revise:
                 ActionExecutor(target).run()
 
+    def showRejectFilesIfNeeded(self):
+        rejectFiles = os.listdir(Config.PROJECT_DIR + "out/reject")
+        if len(rejectFiles) > 0:
+            rejectDir = Config.PROJECT_DIR + "out/reject/"
+            Log.i("\nThere are reject files in " +  rejectDir + ", please check it out!")
+            Log.i(rejectFiles)
+            Log.i("\n")
 # End of class Revision
 
 
@@ -220,12 +236,12 @@ class ActionExecutor:
             execute = self.executeNodes[0]
 
             script = execute.attrib['script']
-            routine = Config.EXECUTOR_DIR + execute.attrib['routine']
+            routine = Config.SCRIPT_DIR + execute.attrib['routine']
 
             # Compose the command string with parameters
             paramList = [routine, self.mDst]
             for param in execute:
-                paramList.append(Config.EXECUTOR_DIR + param.text)
+                paramList.append(Config.PATCHES_DIR + param.text)
 
             # Execute the command
             command = " ".join(paramList)
@@ -288,6 +304,5 @@ class Log:
 
 # End of class Log
 
-
 if __name__ == "__main__":
-    Main()
+    AutoPatch()

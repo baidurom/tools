@@ -180,17 +180,25 @@ class EdifyGenerator(object):
     """Log a message to the screen (if the logs are visible)."""
     self.script.append('ui_print("%s");' % (message,))
 
-  def FormatPartition(self, partition):
+  def FormatPartition(self, partition, paramNum="4"):
     """Format the given partition, specified by its mount point (eg,
     "/system")."""
 
+    print "FormatPartion %s with param num: %s" %(partition, paramNum)
     reserve_size = 0
     fstab = self.info.get("fstab", None)
     if fstab:
       p = fstab[partition]
-      self.script.append('format("%s", "%s", "%s", "%s");' %
-                         (p.fs_type, common.PARTITION_TYPES[p.fs_type],
-                          p.device, p.length))
+      if paramNum is "5":
+        print 5
+        self.script.append('format("%s", "%s", "%s", "%s", "%s");' %
+                           (p.fs_type, common.PARTITION_TYPES[p.fs_type],
+                            p.device, p.length, p.mount_point))
+      else:
+        print 4
+        self.script.append('format("%s", "%s", "%s", "%s");' %
+                           (p.fs_type, common.PARTITION_TYPES[p.fs_type],
+                            p.device, p.length))
 
   def DeleteFiles(self, file_list):
     """Delete all files in file_list."""

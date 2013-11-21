@@ -66,12 +66,10 @@ else
     stockzip=$1
     threadnum=${2#-j}
 fi
-echo ">>> set thread num = $threadnum"
 
 if [ "x$threadnum" = "x" ];then
     threadnum=4
 fi
-echo ">>> set thread num = $threadnum"
 
 zippath=$(cd "$(dirname "$stockzip")"; pwd)
 zipname=$(basename "$stockzip")

@@ -1,10 +1,13 @@
 #!/usr/bin/python
-# Filename: merge-AndroidManifest.py
+# Filename: _merger_android_manifest.py
 
 ### File Information ###
 
 """
 Merge the framework-res/AndroidManifest.xml automatically.
+
+@hide
+
 """
 
 __author__ = 'duanqizhi01@baidu.com (duanqz)'

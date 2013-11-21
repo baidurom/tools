@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<merge>
-    <item action="ADD"
-          position="BELOW"
-          anchor="# static fields">
-.field public static final POLICY_REJECT_METERED:I = 0x2
-    </item>
-</merge>

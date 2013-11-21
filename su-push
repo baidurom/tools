@@ -1,0 +1,52 @@
+#!/bin/bash
+
+src=$1
+target=$2
+
+src_basename=`basename $src`
+ANDROID_PATH=( /sbin /vendor/bin /system/sbin /system/bin /system/xbin )
+SU_PATH=""
+
+function get_su_path()
+{
+	i=1
+	while [ $i -lt ${#ANDROID_PATH} ];
+	do
+		suPath=${ANDROID_PATH[$i]}/su
+		suPerm=`adb shell ls -l $suPath 2>&1`
+		
+		if [[ $suPerm == *"No such file or directory"* ]];then
+			echo "wrong su path: $suPath"
+		else
+			suPerm=`echo $suPerm | awk '{print $1}'`
+			echo "su path: $suPath, suPerm: $suPerm"
+			while [[ $suPerm != *s* ]];
+			do
+				sleep 1
+				suPerm=`adb shell ls -l $suPath 2>&1 | awk '{print $1}'`
+				echo "wait su ok! suPerm: $suPerm"
+			done
+			
+			echo "su permission is ok!"
+			SU_PATH=$suPath
+			break
+		fi
+		let "i=$i+1"
+	done
+}
+
+if [ -f $src ]; then
+	adb wait-for-device
+	get_su_path
+
+	if [ x"$SU_PATH" != x ];then
+		adb push $src /data/local/tmp
+		if [[ $target == "/system/"* ]];then
+			echo "su -c \"mount -o remount,rw /system; cp /data/local/tmp/$src_basename $target;mount -o remount,ro /system\"; exit" | adb shell
+		else
+			echo "su -c \"cp /data/local/tmp/$src_basename $target\"; exit" | adb shell
+		fi
+else
+		echo "$src doesn't exist!"
+	fi
+fi

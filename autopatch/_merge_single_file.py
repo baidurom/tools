@@ -1,10 +1,16 @@
 #!/usr/bin/python
-# Filename: MergeExecutor.py
+# Filename: _merger_single_file.py
 
 ### File Information ###
 
 """
-Merge the changed defined in XML into destination file.
+Merge the modifications defined in XML into target file.
+
+@hide
+
+This routine takes over two parameters.
+parameter 1 : file path of target smali to be merged
+parameter 2 : file path of XML defined modification  
 """
 
 __author__ = 'duanqizhi01@baidu.com (duanqz)'
@@ -17,6 +23,7 @@ __author__ = 'duanqizhi01@baidu.com (duanqz)'
 
 import sys
 import re
+import os
 
 try:
     import xml.etree.cElementTree as ET
@@ -38,7 +45,7 @@ class Main():
         if len(sys.argv) < 3:
             print "Error arguments. " + " ".join(sys.argv)
             sys.exit(1)
-        
+
         dstFilePath = sys.argv[1]
         srcFilePath = sys.argv[2]
 
@@ -60,6 +67,8 @@ class MergeExecutor:
 
         # Hold all the exceptions
         self.exceptions = []
+        # Handle reject files while merging
+        self.rejectHandler = RejectHandler()
 
     def run(self):
         # Open the destination file
@@ -92,19 +101,13 @@ class MergeExecutor:
         # Apply the modification
         self.applyMerge(item, resultMap['anchorStart'], resultMap['anchorEnd'], resultMap['content'])
 
-    def getItemAttrib(self, item, key):
-        try:
-            return item.attrib[key]
-        except KeyError:
-            return None
-
     def getNearbyPos(self, item):
         """
         Get the nearby position. If not found the nearby, 0 will be returned.
         """
 
         nearbyPos = 0
-        nearby = self.getItemAttrib(item, 'nearby')
+        nearby = MergerXML.getItemAttrib(item, 'nearby')
         if nearby != None:
             nearbyPos = self.dstFileBuf.find(nearby)
 
@@ -121,7 +124,7 @@ class MergeExecutor:
         """
 
         anchor = item.attrib['anchor']
-        matchType = self.getItemAttrib(item, 'match')
+        matchType = MergerXML.getItemAttrib(item, 'match')
 
         if anchor == "EOF":
             anchorStart = len(self.dstFileBuf)
@@ -132,7 +135,7 @@ class MergeExecutor:
             anchorRegex = re.compile(anchor)
             match = anchorRegex.search(self.dstFileBuf[nearbyPos:])
             if match == None:
-                return None
+                anchorStart = -1
             else:
                 anchorStart = nearbyPos + match.start()
                 anchorEnd = nearbyPos + match.end()
@@ -146,6 +149,7 @@ class MergeExecutor:
 
         if anchorStart < 0:
             self.exceptions.append("Can not find anchor " + anchor + " in " + self.mDstFilePath)
+            self.rejectHandler.reject(self.mDstFilePath, item)
             return None
 
         return { "anchorStart" : anchorStart,
@@ -158,7 +162,7 @@ class MergeExecutor:
         """
 
         action = item.attrib['action']
-        position = self.getItemAttrib(item, 'position')
+        position = MergerXML.getItemAttrib(item, 'position')
 
         if action == "ADD":
             if position == "OVER":
@@ -170,6 +174,7 @@ class MergeExecutor:
             self.dstFileBuf = self.dstFileBuf[:anchorStart]  + content.strip() + self.dstFileBuf[anchorEnd:]
 
         elif action == "DEL":
+            # TODO add Delete action
             pass
 
     def openDstFile(self):
@@ -214,12 +219,64 @@ class MergerXML:
     def parse(self, xmlFile):
         self.tree = ET.parse(xmlFile)
         return self
-    
+
     def getItems(self):
         return self.tree.findall('item')
 
+    @staticmethod
+    def getItemAttrib(item, key):
+        try:
+            return item.attrib[key]
+        except KeyError:
+            return None
 # End of class MergerXML
 
+
+class RejectHandler:
+    """
+    Handle rejected files while merging.
+    """
+
+    REJECT_DIR = os.getcwd() + "/out/reject/"
+
+    def __init__(self):
+        if os.path.exists(RejectHandler.REJECT_DIR) == False:
+            os.makedirs(RejectHandler.REJECT_DIR)
+            pass
+
+    def getRejectFilePath(self, originFilePath):
+        return RejectHandler.REJECT_DIR + os.path.basename(originFilePath) + ".reject"
+
+    def reject(self, originFilePath, item):
+        # Open the the reject file with append mode
+        self.rejectFileHandle = open(self.getRejectFilePath(originFilePath), "a")
+
+        # Write the reject content
+        action = MergerXML.getItemAttrib(item, 'action')
+        anchor = MergerXML.getItemAttrib(item, 'anchor')
+        position = MergerXML.getItemAttrib(item, 'position')
+        matchType = MergerXML.getItemAttrib(item, 'match')
+        content = item.text
+
+        buf  = "# action : " + action + "\n"
+
+        if position != None:
+            buf += "# position : " + position + "\n"
+
+        buf += "# anchor : " + anchor + "\n"
+
+        if matchType != None:
+            buf += "# match : " + matchType + "\n"
+
+        buf += content
+        buf += "\n# -----------------------------------------------------------\n"
+        self.rejectFileHandle.write(buf)
+
+        # Close
+        self.rejectFileHandle.close()
+        pass
+
+# End of class RejectHandler
 
 if __name__ == "__main__":
     Main()
