@@ -90,6 +90,7 @@ OPTIONS.worker_threads = 3
 OPTIONS.cust_boot=False
 #wschen
 OPTIONS.logo = None
+OPTIONS.formatNum = "4"
 
 def MostPopularKey(d, default):
   """Given a dict, return the key corresponding to the largest
@@ -414,7 +415,7 @@ def WriteFullOTAPackage(input_zip, output_zip):
 
   script.Print("Formatting system...")
   script.Unmount("/system")
-  script.FormatPartition("/system")
+  script.FormatPartition("/system", OPTIONS.formatNum)
 
   script.Print("Installing system files...")
   script.Mount("/system")
@@ -608,6 +609,7 @@ def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
       "/tmp/recovery.img", "recovery.img", OPTIONS.source_tmp, "RECOVERY")
   target_recovery = common.GetBootableImage(
       "/tmp/recovery.img", "recovery.img", OPTIONS.target_tmp, "RECOVERY")
+  updating_recovery = None
   if source_recovery and target_recovery:
     updating_recovery = (source_recovery.data != target_recovery.data)
 
@@ -661,7 +663,7 @@ def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
 
   if OPTIONS.wipe_user_data:
     script.Print("Erasing user data...")
-    script.FormatPartition("/data")
+    script.FormatPartition("/data", OPTIONS.formatNum)
 
   script.Print("Removing unneeded files...")
   script.DeleteFiles(["/"+i[0] for i in verbatim_targets] +
@@ -770,10 +772,10 @@ def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
       to_create.append((dest, link))
   script.DeleteFiles([i[1] for i in to_create])
   script.MakeSymlinks(to_create)
-  if OPTIONS.aslr_mode:
-    script.RetouchBinaries(target_retouch_files)
-  else:
-    script.UndoRetouchBinaries(target_retouch_files)
+#  if OPTIONS.aslr_mode:
+#    script.RetouchBinaries(target_retouch_files)
+#  else:
+#    script.UndoRetouchBinaries(target_retouch_files)
 
   # Now that the symlinks are created, we can set all the
   # permissions.
@@ -830,12 +832,14 @@ def main(argv):
        OPTIONS.cust_boot = True
     elif o in ("-l", "--logo"):
       OPTIONS.logo = a
+    elif o in ("-f", "--formatNum"):
+      OPTIONS.formatNum = a
     else:
       return False
     return True
 
   args = common.ParseOptions(argv, __doc__,
-                             extra_opts="b:k:i:d:wne:l:a:c:",
+                             extra_opts="b:k:i:d:wne:l:a:c:f:",
                              extra_long_opts=["board_config=",
                                               "package_key=",
                                               "incremental_from=",
@@ -846,6 +850,7 @@ def main(argv):
                                               "worker_threads=",
                                               "aslr_mode=",
                                               "cust_boot=",
+                                              "formatNum=",
                                               ],
                              extra_option_handler=option_handler)
 
