@@ -242,15 +242,8 @@ class EdifyGenerator(object):
             'write_raw_image(package_extract_file("%(fn)s"), "%(device)s");'
             % args)
       elif partition_type == "EMMC":
-        if fn == "boot.img" and p.device == "boot":
-          self.script.append(
-            ('assert(package_extract_file("%(fn)s", "/tmp/%(fn)s"),\n'
-             '       write_raw_image("/tmp/%(fn)s", "bootimg"),\n'
-             '       delete("/tmp/%(fn)s"));') % args)
-
-        else:
-          self.script.append(
-              'package_extract_file("%(fn)s", "%(device)s");' % args)
+        self.script.append(
+            'package_extract_file("%(fn)s", "%(device)s");' % args)
       else:
         raise ValueError("don't know how to write \"%s\" partitions" % (p.fs_type,))
 

@@ -337,6 +337,26 @@ def AppendAssertions(script, input_zip):
   script.AssertDevices(device, devicealias)
 
 
+def AddBaiduServices(output_zip):
+  """ add baidu's service to install-recovery.sh
+  """
+  try:
+    baidu_service = output_zip.getinfo("system/bin/baidu_service")
+    sh = ""
+    try:
+      sh_info = output_zip.getinfo("recovery/etc/install-recovery.sh")
+      sh = output_zip.read("recovery/etc/install-recovery.sh")
+    except:
+      sh = "#!/system/bin/sh\n"
+
+    print "add baidu's service to install-recovery.sh"
+    sh = "%s\n/system/bin/baidu_service &\n" %sh
+    common.ZipWriteStr(output_zip, "recovery/etc/install-recovery.sh", sh)
+    Item.Get("system/etc/install-recovery.sh", dir=False)
+  except:
+    print "baidu_service doesn't exist! ignore..."
+
+
 def MakeRecoveryPatch(output_zip, recovery_img, boot_img):
   """Generate a binary patch that creates the recovery image starting
   with the boot image.  (Most of the space in these images is just the
@@ -438,6 +458,8 @@ def WriteFullOTAPackage(input_zip, output_zip):
                                          OPTIONS.input_tmp, "RECOVERY")
   if recovery_img:
     MakeRecoveryPatch(output_zip, recovery_img, boot_img)
+
+  AddBaiduServices(output_zip)
 
   script.Print("Set permission...")
   Item.GetMetadata(input_zip)
@@ -719,8 +741,9 @@ def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
     # the boot image (though not in the ramdisk) so they can be used
     # as fodder for constructing the recovery image.
     MakeRecoveryPatch(output_zip, target_recovery, target_boot)
-    script.DeleteFiles(["/system/recovery-from-boot.p",
-                        "/system/etc/install-recovery.sh"])
+    AddBaiduServices(output_zip)
+#    script.DeleteFiles(["/system/recovery-from-boot.p",
+#                        "/system/etc/install-recovery.sh"])
     print "recovery image changed; including as patch from boot."
   else:
     print "recovery image unchanged; skipping."
