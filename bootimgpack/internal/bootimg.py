@@ -30,7 +30,7 @@ class Bootimg:
         """
 
         # Try unpack tool set to find the suitable one
-        self.type = self.TOOLKIT.getType(bootfile)
+        self.type = self.TOOLKIT.getType(self.bootfile)
 
         # Check whether the tools exists
         if self.type == None: raise ValueError("Unknown boot image type.")

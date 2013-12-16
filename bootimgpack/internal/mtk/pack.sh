@@ -34,7 +34,11 @@ function pack_bootimg()
 
 	cd $BOOTDIR
 	$MKBOOTFS ./RAMDISK | $MINIGZIP > ramdisk.img
-	$MKIMAGE ./ramdisk.img  ROOTFS > ramdisk_root.img
+	if [ -f ./RAMDISK/etc/recovery.fstab ];then
+		$MKIMAGE ./ramdisk.img  RECOVERY > ramdisk_root.img
+	else
+		$MKIMAGE ./ramdisk.img  ROOTFS > ramdisk_root.img
+	fi
 	$MKMTKBOOTIMG --kernel ./kernel --ramdisk ./ramdisk_root.img  --output out.img
 
 	rm ramdisk.img ramdisk_root.img

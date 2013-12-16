@@ -456,7 +456,7 @@ def WriteFullOTAPackage(input_zip, output_zip):
                                      OPTIONS.input_tmp, "BOOT")
   recovery_img = common.GetBootableImage("recovery.img", "recovery.img",
                                          OPTIONS.input_tmp, "RECOVERY")
-  if recovery_img:
+  if boot_img and recovery_img:
     MakeRecoveryPatch(output_zip, recovery_img, boot_img)
 
   AddBaiduServices(output_zip)
