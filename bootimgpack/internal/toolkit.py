@@ -9,7 +9,8 @@ __author__ = 'duanqizhi01@baidu.com (duanqz)'
 import os
 import shutil
 import commands
-import pickle
+import tempfile
+
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
@@ -101,7 +102,7 @@ class ToolsMatcher:
     """
 
     # Directory for temporary data storage.
-    TEMP_DIR=".0zzf-bootimg-temp"
+    TEMP_DIR=tempfile.mkdtemp()
 
     @staticmethod
     def tryUnpack(unpackTool, bootimg):

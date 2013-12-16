@@ -28,8 +28,9 @@ function init_tools()
 function unpack_bootimg()
 {
 	local old_pwd=`pwd`
-	cp $BOOTIMG $TOOL_DIR/boot.img
-	cd $TOOL_DIR
+	mkdir -p $OUTPUT
+	cp $BOOTIMG $OUTPUT/boot.img
+	cd $OUTPUT
 
 	# Open the macro variable to filter " *** glibc detected *** " error
 	local tmp_stderr=$LIBC_FATAL_STDERR_
@@ -38,20 +39,15 @@ function unpack_bootimg()
 	# Unpack boot image
 	$UNPACKBOOTIMG -i boot.img -o ./
 	$UNPACKBOOTIMGPL boot.img
+	mv boot.img-ramdisk   RAMDISK
+	mv boot.img-zImage    kernel
+	mv boot.img-cmdline   cmdline
+	mv boot.img-base      base
+	mv boot.img-pagesize  pagesize
+	rm -rf boot.img*
 
 	export LIBC_FATAL_STDERR_=$tmp_stderr
 	cd $old_pwd
-}
-
-function handle_output()
-{
-	mkdir $OUTPUT -p
-	cp $TOOL_DIR/boot.img-ramdisk   $OUTPUT/RAMDISK -r
-	cp $TOOL_DIR/boot.img-zImage    $OUTPUT/kernel
-	cp $TOOL_DIR/boot.img-cmdline   $OUTPUT/cmdline
-	cp $TOOL_DIR/boot.img-base      $OUTPUT/base
-	cp $TOOL_DIR/boot.img-pagesize  $OUTPUT/pagesize
-	rm -rf $TOOL_DIR/boot.img*
 }
 
 ### Start Script ###
@@ -62,4 +58,3 @@ function handle_output()
 
 init_tools;
 unpack_bootimg;
-handle_output;

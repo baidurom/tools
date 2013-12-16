@@ -24,26 +24,22 @@ function init_tools()
 	cd $old_pwd
 }
 
-
 function unpack_bootimg()
 {
 	local old_pwd=`pwd`
-	cp $BOOTIMG $TOOL_DIR/boot.img
-	cd $TOOL_DIR
+	mkdir -p $OUTPUT
+	cp $BOOTIMG $OUTPUT/boot.img
+	cd $OUTPUT
 
 	# Unpack boot image
 	$UNPACKBOOTIMG boot.img
+	mv boot.img-ramdisk  RAMDISK
+	mv boot.img-kernel   kernel
+	rm -rf boot.img*
 
 	cd $old_pwd
 }
 
-function handle_output()
-{
-	mkdir $OUTPUT -p
-	mv $TOOL_DIR/boot.img-ramdisk  $OUTPUT/RAMDISK
-	mv $TOOL_DIR/boot.img-kernel   $OUTPUT/kernel
-	rm -rf $TOOL_DIR/boot.img*
-}
 
 ### Start Script ###
 
@@ -53,4 +49,3 @@ function handle_output()
 
 init_tools;
 unpack_bootimg;
-handle_output;
