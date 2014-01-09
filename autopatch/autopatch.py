@@ -23,6 +23,7 @@ import commands
 import os.path
 import shutil
 import sys
+import ApplyPatch
 
 try:
     import xml.etree.cElementTree as ET
@@ -70,7 +71,7 @@ class Config:
     SCRIPT_DIR = sys.path[0] + "/"
 
     # Default patch.xml to be parsed
-    DEFAULT_REVISION_XML = PROJECT_DIR + "baidu_patch.xml"
+    DEFAULT_REVISION_XML = PROJECT_DIR + "demo_patch.xml"
 
     # Source and destination directory holding the file to be handled
     SOURCE_DIR = PROJECT_DIR + "baidu/smali/"
@@ -145,115 +146,119 @@ class AutoPatchXML:
         Config.initConfigFrom(XMLDom)
         #Config.toString()
 
-        for revise in XMLDom.findall('revise'):
-            self.handleRevise(revise)
+        for feature in XMLDom.findall('feature'):
+            self.handleRevise(feature)
 
         self.showRejectFilesIfNeeded()
 
-    def handleRevise(self, revise):
-        require = revise.attrib['require']
-        description = revise.attrib['description']
+    def handleRevise(self, feature):
+        require = feature.attrib['require']
+        description = feature.attrib['description']
 
         if require == "MUST":
             Log.i("\n>>> [M] " + description)
-            for target in revise:
-                ActionExecutor(target).run()
+            for revise in feature:
+                ReviseExecutor(revise).run()
  
         elif Config.REVISE_OPTION and require == "OPTION":
             Log.i("\n>>> [O] " + description)
-            for target in revise:
-                ActionExecutor(target).run()
+            for revise in feature:
+                ReviseExecutor(revise).run()
 
     def showRejectFilesIfNeeded(self):
-        rejectFiles = os.listdir(Config.PROJECT_DIR + "out/reject")
+        rejectDir = Config.PROJECT_DIR + "out/reject/"
+        if os.path.exists(rejectDir) == False:
+            return
+
+        rejectFiles = os.listdir(rejectDir)
         if len(rejectFiles) > 0:
-            rejectDir = Config.PROJECT_DIR + "out/reject/"
             Log.i("\nThere are reject files in " +  rejectDir + ", please check it out!")
             Log.i(rejectFiles)
             Log.i("\n")
 # End of class Revision
 
 
-class ActionExecutor:
+class ReviseExecutor:
     """
-    Execute action to target.
+    Execute revise.
     """
 
     ADD = "ADD"
     MERGE = "MERGE"
     REPLACE = "REPLACE"
+    ROUTINE = "ROUTINE"
 
-    def __init__(self, target):
+    def __init__(self, revise):
         """
-        @args target: the revise target.
+        @args revise: the revise XML node.
         """
 
-        self.action = target.attrib['action']
+        self.action = revise.attrib['action']
 
-        # Compose the source and destination file path
-        path = target.attrib['path']
-        self.mSrc = Config.SOURCE_DIR + path
-        self.mDst = Config.TARGET_DIR + path
+        # Compose the source and target file path
+        target = revise.attrib['target']
+        self.mSource = Config.SOURCE_DIR + target
+        self.mTarget = Config.TARGET_DIR + target
 
-        self.executeNodes = target.getchildren()
+        try: 
+            patch = revise.attrib['patch']
+            self.mPatch = Config.PATCHES_DIR + patch
+        except KeyError: pass
+
+        try:
+            routine =  revise.attrib['routine']
+            self.mRoutine = Config.SCRIPT_DIR + routine
+        except KeyError: pass
+
 
     def run(self):
-        if self.action == ActionExecutor.ADD:
+        if self.action == ReviseExecutor.ADD:
             self.add()
-        elif self.action == ActionExecutor.REPLACE:
+        elif self.action == ReviseExecutor.REPLACE:
             self.replace()
-        elif self.action == ActionExecutor.MERGE:
+        elif self.action == ReviseExecutor.MERGE:
             self.merge()
+        elif self.action == ReviseExecutor.ROUTINE:
+            self.routine()
 
     def add(self):
-        if not self.checkExists(self.mSrc) :
+        if not self.checkExists(self.mSource) :
             return
 
-        Log.i(" ADD  " + self.mDst)
-        shutil.copy(self.formatPath(self.mSrc), \
-                    self.formatPath(self.mDst))
+        Log.i(" ADD  " + self.mTarget)
+        shutil.copy(self.formatPath(self.mSource), \
+                    self.formatPath(self.mTarget))
 
     def replace(self):
-        if not self.checkExists(self.mSrc) or \
-           not self.checkExists(self.mDst) :
+        if not self.checkExists(self.mSource) or \
+           not self.checkExists(self.mTarget) :
             return
 
-        Log.i(" REPLACE  " + self.mDst)
-        shutil.copy(self.formatPath(self.mSrc), \
-                    self.formatPath(self.mDst))
+        Log.i(" REPLACE  " + self.mTarget)
+        shutil.copy(self.formatPath(self.mSource), \
+                    self.formatPath(self.mTarget))
 
     def merge(self):
-        if not self.checkExists(self.mDst) :
+        if not self.checkExists(self.mTarget) or \
+           not self.checkExists(self.mPatch):
             return
 
-        Log.i(" MERGE  " + self.mDst)
-        self.executeRoutineIfNeeded()
+        Log.i(" MERGE  " + self.mTarget)
+        try:
+            ApplyPatch.MergeExecutor(ReviseExecutor.formatPath(self.mTarget), \
+                                     ReviseExecutor.formatPath(self.mPatch)).run()
+        except: pass
 
-    def executeRoutineIfNeeded(self):
-        # If execute node exists in tree, execute the command
-        if len(self.executeNodes) > 0:
-            # The first child is element <execute>
-            execute = self.executeNodes[0]
-
-            script = execute.attrib['script']
-            routine = Config.SCRIPT_DIR + execute.attrib['routine']
-
-            # Compose the command string with parameters
-            paramList = [routine, self.mDst]
-            for param in execute:
-                paramList.append(Config.PATCHES_DIR + param.text)
-
-            # Execute the command
-            command = " ".join(paramList)
-            RoutineExecutor(script).run(command)
-
+    def routine(self):
+        Log.i(" ROUTINE  " + self.mRoutine)
+        commands.getstatusoutput(self.mRoutine)
 
     @staticmethod
-    def checkExists(target):
-        if os.path.exists(ActionExecutor.formatPath(target)):
+    def checkExists(filename):
+        if os.path.exists(ReviseExecutor.formatPath(filename)):
             return True
 
-        Log.w("Target not exists. " + target)
+        Log.w("File not exists. " + filename)
         return False
 
     @staticmethod
@@ -261,26 +266,6 @@ class ActionExecutor:
         return path.replace("\\", "")
 
 # End of class Target
-
-
-class RoutineExecutor:
-    """
-    RoutineExecutor to execute the command.
-    """
-
-    def __init__(self, script):
-        self.script = script
-        # TODO Create different RoutineExecutor by script. [shell|python] etc.
-
-    def run(self, command):
-        result = commands.getstatusoutput(command)
-        if result[0] == 0:
-            Log.d("Execute Successfully [" + command + "]")
-            pass
-        else:
-            Log.w(result[1])
-
-# End of class RoutineExecutor
 
 
 class Log:

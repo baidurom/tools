@@ -36,21 +36,22 @@ except ImportError:
 
 ### prologue ###
 
-class Main():
+class ApplyPatch():
     """
     Entry of the script
     """
 
     def __init__(self):
         if len(sys.argv) < 3:
-            print "Error arguments. " + " ".join(sys.argv)
+            print "Usage ApplyPatch.py TARGET PATCH"
+            print "   - TARGET : the target file path to be patched"
+            print "   - PATCH  : the patch file path"
             sys.exit(1)
 
-        dstFilePath = sys.argv[1]
-        srcFilePath = sys.argv[2]
+        targetPath = sys.argv[1]
+        patchPath = sys.argv[2]
 
-        MergeExecutor(dstFilePath, srcFilePath).run()
-        pass
+        MergeExecutor(targetPath, patchPath).run()
 
 # End of class Main
 
@@ -60,10 +61,10 @@ class MergeExecutor:
     Execute the merge action
     """
 
-    def __init__(self, dstFilePath, srcFilePath):
+    def __init__(self, targetPath, patchPath):
 
-        self.mDstFilePath = dstFilePath
-        self.mSrcFilePath = srcFilePath
+        self.mTargetPath = targetPath
+        self.mPatchPath = patchPath
 
         # Hold all the exceptions
         self.exceptions = []
@@ -71,16 +72,16 @@ class MergeExecutor:
         self.rejectHandler = RejectHandler()
 
     def run(self):
-        # Open the destination file
-        self.openDstFile()
+        # Open the target file
+        self.openTarget()
 
-        # Open and parse the source MergerXML file
-        mergerXML = MergerXML().parse(self.mSrcFilePath)
-        for item in mergerXML.getItems():
+        # Open and parse the source PatchXML file
+        patchXML = PatchXML().parse(self.mPatchPath)
+        for item in patchXML.getItems():
             self.mergeItem(item)
 
-        # Close the destination file
-        self.closeDstFiles()
+        # Close the target file
+        self.closeTarget()
 
         # Raise exceptions if happened
         self.raiseExceptions()
@@ -107,9 +108,9 @@ class MergeExecutor:
         """
 
         nearbyPos = 0
-        nearby = MergerXML.getItemAttrib(item, 'nearby')
+        nearby = PatchXML.getItemAttrib(item, 'nearby')
         if nearby != None:
-            nearbyPos = self.dstFileBuf.find(nearby)
+            nearbyPos = self.mTargetContent.find(nearby)
 
         if nearbyPos < 0:
             print "Can not find nearby " + nearby
@@ -124,16 +125,16 @@ class MergeExecutor:
         """
 
         anchor = item.attrib['anchor']
-        matchType = MergerXML.getItemAttrib(item, 'match')
+        matchType = PatchXML.getItemAttrib(item, 'match')
 
         if anchor == "EOF":
-            anchorStart = len(self.dstFileBuf)
+            anchorStart = len(self.mTargetContent)
             anchorEnd = anchorStart
             content = item.text
 
         elif matchType == "REGEX":
             anchorRegex = re.compile(anchor)
-            match = anchorRegex.search(self.dstFileBuf[nearbyPos:])
+            match = anchorRegex.search(self.mTargetContent[nearbyPos:])
             if match == None:
                 anchorStart = -1
             else:
@@ -143,13 +144,13 @@ class MergeExecutor:
                 content = item.text % match.groups()
 
         else:
-            anchorStart = self.dstFileBuf.find(anchor, nearbyPos)
+            anchorStart = self.mTargetContent.find(anchor, nearbyPos)
             anchorEnd = anchorStart + len(anchor)
             content = item.text
 
         if anchorStart < 0:
-            self.exceptions.append("Can not find anchor " + anchor + " in " + self.mDstFilePath)
-            self.rejectHandler.reject(self.mDstFilePath, item)
+            self.exceptions.append("Can not find anchor " + anchor + " in " + self.mTargetPath)
+            self.rejectHandler.reject(self.mTargetPath, item)
             return None
 
         return { "anchorStart" : anchorStart,
@@ -162,40 +163,40 @@ class MergeExecutor:
         """
 
         action = item.attrib['action']
-        position = MergerXML.getItemAttrib(item, 'position')
+        position = PatchXML.getItemAttrib(item, 'position')
 
         if action == "ADD":
             if position == "OVER":
-                self.dstFileBuf = self.dstFileBuf[:anchorStart] + content + "\n" + self.dstFileBuf[anchorStart:]
+                self.mTargetContent = self.mTargetContent[:anchorStart] + content + "\n" + self.mTargetContent[anchorStart:]
             elif position == "BELOW":
-                self.dstFileBuf = self.dstFileBuf[:anchorEnd] + "\n" + content + self.dstFileBuf[anchorEnd:]
+                self.mTargetContent = self.mTargetContent[:anchorEnd] + "\n" + content + self.mTargetContent[anchorEnd:]
 
         elif action == "REPLACE":
-            self.dstFileBuf = self.dstFileBuf[:anchorStart]  + content.strip() + self.dstFileBuf[anchorEnd:]
+            self.mTargetContent = self.mTargetContent[:anchorStart]  + content.strip() + self.mTargetContent[anchorEnd:]
 
         elif action == "DEL":
             # TODO add Delete action
             pass
 
-    def openDstFile(self):
+    def openTarget(self):
         """
         Open the destination file in read and write mode
         Read the file content and create a buffer
         """
 
-        self.dstFileHandle = open(self.mDstFilePath, 'r+')
-        self.dstFileBuf = self.dstFileHandle.read()
+        self.mTargetFile = open(self.mTargetPath, 'r+')
+        self.mTargetContent = self.mTargetFile.read()
 
-    def closeDstFiles(self):
+    def closeTarget(self):
         """
         Update the file content , and flush the destination file to disk
         """
 
-        self.dstFileHandle.truncate(0)
-        self.dstFileHandle.seek(0)
-        self.dstFileHandle.write(self.dstFileBuf)
-        self.dstFileHandle.flush()
-        self.dstFileHandle.close()
+        self.mTargetFile.truncate(0)
+        self.mTargetFile.seek(0)
+        self.mTargetFile.write(self.mTargetContent)
+        self.mTargetFile.flush()
+        self.mTargetFile.close()
 
     def raiseExceptions(self):
         """
@@ -208,7 +209,7 @@ class MergeExecutor:
 # End of class MergeExecutor
 
 
-class MergerXML:
+class PatchXML:
     """
     Represents the XML file declare the content to be merged.
     """
@@ -229,7 +230,7 @@ class MergerXML:
             return item.attrib[key]
         except KeyError:
             return None
-# End of class MergerXML
+# End of class PatchXML
 
 
 class RejectHandler:
@@ -252,11 +253,11 @@ class RejectHandler:
         self.rejectFileHandle = open(self.getRejectFilePath(originFilePath), "a")
 
         # Write the reject content
-        action = MergerXML.getItemAttrib(item, 'action')
-        nearby = MergerXML.getItemAttrib(item, 'nearby')
-        anchor = MergerXML.getItemAttrib(item, 'anchor')
-        position = MergerXML.getItemAttrib(item, 'position')
-        matchType = MergerXML.getItemAttrib(item, 'match')
+        action = PatchXML.getItemAttrib(item, 'action')
+        nearby = PatchXML.getItemAttrib(item, 'nearby')
+        anchor = PatchXML.getItemAttrib(item, 'anchor')
+        position = PatchXML.getItemAttrib(item, 'position')
+        matchType = PatchXML.getItemAttrib(item, 'match')
         content = item.text
 
         # Compose the reject text
@@ -283,7 +284,7 @@ class RejectHandler:
 # End of class RejectHandler
 
 if __name__ == "__main__":
-    Main()
+    ApplyPatch()
 
 ### prologue ###
 
