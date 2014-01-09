@@ -253,20 +253,24 @@ class RejectHandler:
 
         # Write the reject content
         action = MergerXML.getItemAttrib(item, 'action')
+        nearby = MergerXML.getItemAttrib(item, 'nearby')
         anchor = MergerXML.getItemAttrib(item, 'anchor')
         position = MergerXML.getItemAttrib(item, 'position')
         matchType = MergerXML.getItemAttrib(item, 'match')
         content = item.text
 
-        buf  = "# action : " + action + "\n"
+        # Compose the reject text
+        if nearby != None:
+            buf = "\n# [IN METHOD] : " + nearby
 
+        buf += "\n# [ ANCHOR  ] : " + anchor
+
+        if matchType != None and matchType == "REGEX":
+            buf += "\n# [ATTENTION] : SHOULD USE REGEX TO MATCH THE ANCHOR IN " + os.path.basename(originFilePath)
+
+        buf += "\n# [ ACTION  ] : " + action
         if position != None:
-            buf += "# position : " + position + "\n"
-
-        buf += "# anchor : " + anchor + "\n"
-
-        if matchType != None:
-            buf += "# match : " + matchType + "\n"
+            buf += " THE FOLLOWING CODE " + position + " ANCHOR \n"
 
         buf += content
         buf += "\n# -----------------------------------------------------------\n"
