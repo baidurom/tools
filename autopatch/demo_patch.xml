@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<features>
+
+    <feature require="MUST" description="Root and enable adb on booing" >
+        <revise action="MERGE"
+                target="vendor/BOOT/RAMDISK/default.prop"
+                patch="revise-default.prop.xml" />
+    </feature>
+
+    <feature require="MUST" description="Baidu UI" >
+        <revise action="ROUTINE"
+                target="framework-res/AndroidManifest.xml"
+                routine="ApplyAndroidManifest.py" />
+    </feature>
+
+    <feature require="MUST" description="Load Baidu framework-res" >
+        <revise action="MERGE"
+                target ="framework.jar.out/smali/android/content/res/AssetManager.smali"
+                patch="revise-AssetManager.xml" />
+    </feature>
+
+    <feature require="MUST" description="Load Baidu service" >
+        <revise action="MERGE"
+                target="services.jar.out/smali/com/android/server/ServerThread.smali"
+                patch="revise-ServerThread.xml" />
+    </feature>
+
+    <feature require="MUST" description="Unpack native libs for system app" >
+        <revise action="MERGE"
+                target="services.jar.out/smali/com/android/server/pm/PackageManagerService.smali"
+                patch="revise-PackageManagerService.xml" />
+    </feature>
+
+    <feature require="MUST" description="Optimization for caller location and potograph">
+        <revise action="MERGE" 
+                target="framework.jar.out/smali/com/android/internal/telephony/CallerInfo.smali"
+                patch="revise-CallerInfo.xml" />
+        <revise action="MERGE"
+                target="framework.jar.out/smali/com/android/internal/telephony/CallerInfoAsyncQuery\$CallerInfoAsyncQueryHandler.smali" 
+                patch="revise-CallerInfoAsyncQuery.xml" />
+    </feature>
+
+    <feature require="MUST" description="Baidu SD card strategy">
+        <revise action="MERGE"
+                target="framework.jar.out/smali/android/os/Environment.smali" 
+                patch="revise-Environment.xml" />
+        <revise action="ADD"
+                target="services.jar.out/smali/com/android/server/MountService\$SdType.smali" />
+    </feature>
+
+    <feature require="OPTION" description="Launch Baidu services on booting">
+        <revise action="MERGE" 
+                target="vendor/BOOT/RAMDISK/init.rc" 
+                patch="revise-init.rc.xml" />
+    </feature>
+
+    <feature require="MUST" description="Merge missed fields and methods in CallManager">
+        <revise action="MERGE"
+                target="telephony-common.jar.out/smali/com/android/internal/telephony/CallManager.smali" 
+                patch="revise-CallManager.xml" />
+    </feature>
+
+    <feature require="MUST" description="Merge missed fileds in Notification">
+        <revise action="MERGE" 
+                target="framework.jar.out/smali/android/app/Notification.smali"  
+                patch="revise-Notification.xml" />
+    </feature>
+
+    <feature require="MUST" description="Merge missed methods in Telephony">
+        <revise action="MERGE" 
+                target="framework.jar.out/smali/android/telephony/TelephonyManager.smali"
+                patch="revise-TelephonyManager.xml" />
+        <revise action="MERGE"
+                target ="telephony-common.jar.out/smali/com/android/internal/telephony/IccCard.smali"  
+                patch="revise-IccCard.xml" />
+        <revise action="MERGE"
+                target="telephony-common.jar.out/smali/com/android/internal/telephony/PhoneSubInfo.smali" 
+                patch="revise-PhoneSubInfo.xml" />
+        <revise action="MERGE"
+                target="framework.jar.out/smali/com/android/internal/telephony/IPhoneSubInfo.smali" 
+                patch="revise-IPhoneSubInfo.xml" />
+        <revise action="MERGE"
+                target="framework.jar.out/smali/com/android/internal/telephony/IPhoneSubInfo\$Stub\$Proxy.smali"
+                patch="revise-IPhoneSubInfoStubProxy.xml" />
+    </feature>
+
+    <feature require="MUST" description="Baidu feature usage statistic">
+        <revise action="ADD" target="framework.jar.out/smali/android/util/FeatureData.smali"  />
+    </feature>
+
+    <feature require="MUST" description="Baidu widget UI extention">
+        <revise action="ADD"
+                target="framework.jar.out/smali/com/android/internal/widget/RecycleFilletListView.smali" />
+        <revise action="MERGE"
+                target="framework.jar.out/smali/com/android/internal/app/AlertController.smali"
+                patch="revise-AlertController.xml" />
+    </feature>
+
+</features>
