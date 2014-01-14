@@ -261,8 +261,9 @@ class RejectHandler:
         content = item.text
 
         # Compose the reject text
+        buf = ""
         if nearby != None:
-            buf = "\n# [IN METHOD] : " + nearby
+            buf += "\n# [IN METHOD] : " + nearby
 
         buf += "\n# [ ANCHOR  ] : " + anchor
 
