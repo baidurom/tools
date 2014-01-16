@@ -19,7 +19,6 @@ __author__ = 'duanqizhi01@baidu.com (duanqz)'
 ### import block ###
 
 import os
-import sys
 
 from xml.dom import minidom
 
@@ -29,8 +28,9 @@ from xml.dom import minidom
 
 ### prologue ###
 
-def merge(dstXML):
+def merge():
 
+    dstXML = os.getcwd() + "/framework-res/AndroidManifest.xml"
     srcXML = os.getcwd() + "/baidu/smali/framework-res/AndroidManifest.xml"
     # Parse out the Element tree
     srcXMLDom = minidom.parse(srcXML)
@@ -51,11 +51,6 @@ def writexml(xmlPath, xmlDom):
     f.close()
 
 if __name__ == "__main__":
-
-    if len(sys.argv) < 2:
-        print "Error argv. " + sys.argv
-        sys.exit(1)
-
-    merge(sys.argv[1])
+    merge()
 
 ### prologue ###

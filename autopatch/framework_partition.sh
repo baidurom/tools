@@ -67,8 +67,8 @@ function combine_frameworks()
 
 	# Also need to combine baidu secondary-framework (if exists) into framework.
 	# It is not necessary to revert it.
-	if [ -d ${PWD}/baidu/smali/secondary-framework.jar.out ]; then
-		cp -r ${PWD}/baidu/smali/secondary-framework.jar.out/smali ${PWD}/baidu/smali/framework.jar.out
+	if [ -d ${PWD}/baidu/smali/secondary_framework.jar.out ]; then
+		cp -r ${PWD}/baidu/smali/secondary_framework.jar.out/smali ${PWD}/baidu/smali/framework.jar.out
 	fi
 }
 

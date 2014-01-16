@@ -77,7 +77,7 @@ function decode_apk()
 #
 # Decode jar contained in BAIDU_JARS to smali
 #
-BAIDU_JARS=(framework.jar services.jar telephony-common.jar secondary-framework.jar)
+BAIDU_JARS=(framework.jar services.jar telephony-common.jar secondary_framework.jar)
 function decode_jar()
 {
 	echo ">>> decoding ${BAIDU_JARS[@]} ...";

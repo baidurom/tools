@@ -273,6 +273,8 @@ class RejectHandler:
         buf += "\n# [ ACTION  ] : " + action
         if position != None:
             buf += " THE FOLLOWING CODE " + position + " ANCHOR \n"
+        elif action == "REPLACE":
+            buf += " ANCHOR WITH THE FOLLOWING CODE \n"
 
         buf += content
         buf += "\n# -----------------------------------------------------------\n"
