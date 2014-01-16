@@ -251,7 +251,9 @@ class ReviseExecutor:
 
     def routine(self):
         Log.i(" ROUTINE  " + self.mRoutine)
-        commands.getstatusoutput(self.mRoutine)
+        result = commands.getstatusoutput(self.mRoutine)
+        if result[0] != 0:
+            Log.e(" Execute routine error.")
 
     @staticmethod
     def checkExists(filename):
