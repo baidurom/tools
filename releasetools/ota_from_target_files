@@ -91,6 +91,7 @@ OPTIONS.cust_boot=False
 #wschen
 OPTIONS.logo = None
 OPTIONS.formatNum = "4"
+OPTIONS.sign_ota = True
 
 def MostPopularKey(d, default):
   """Given a dict, return the key corresponding to the largest
@@ -860,6 +861,8 @@ def main(argv):
       OPTIONS.logo = a
     elif o in ("-f", "--formatNum"):
       OPTIONS.formatNum = a
+    elif o in ("--no_sign"):
+      OPTIONS.sign_ota = False
     else:
       return False
     return True
@@ -877,6 +880,7 @@ def main(argv):
                                               "aslr_mode=",
                                               "cust_boot=",
                                               "formatNum=",
+                                              "no_sign=",
                                               ],
                              extra_option_handler=option_handler)
 
@@ -928,7 +932,11 @@ def main(argv):
 
   output_zip.close()
 
-  SignOutput(temp_zip_file.name, args[1])
+  if OPTIONS.sign_ota is True:
+    SignOutput(temp_zip_file.name, args[1])
+  else:
+    print "not sign ota files, just copy...."
+    open(args[1], "wb").write(open(temp_zip_file.name, "rb").read())
   temp_zip_file.close()
 
   common.Cleanup()
