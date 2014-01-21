@@ -230,13 +230,35 @@ class ReviseExecutor:
                     self.formatPath(self.mTarget))
 
     def replace(self):
-        if not self.checkExists(self.mSource) or \
-           not self.checkExists(self.mTarget) :
+        if self.mSource.endswith("*") :
+            # Replace all the files match the prefix
+
+            # List all the file in directory
+            sourcePath = os.path.dirname(self.mSource) + "/"
+            targetPath = os.path.dirname(self.mTarget) + "/"
+            files = os.listdir(sourcePath)
+
+            # Match the filename in the directory
+            prefix = os.path.basename(self.mSource)
+            index = prefix.index("*")
+            prefix = prefix[0:index]
+            for filename in files:
+                if filename.startswith(prefix):
+                    source = sourcePath + filename
+                    target = targetPath + filename
+                    self.replaceSingleFile(source, target)
+        else:
+            # Replace a single file
+            self.replaceSingleFile(self.mSource, self.mTarget)
+
+    def replaceSingleFile(self, source, target):
+        if not self.checkExists(source):
             return
 
-        Log.i(" REPLACE  " + self.mTarget)
-        shutil.copy(self.formatPath(self.mSource), \
-                    self.formatPath(self.mTarget))
+        Log.i(" REPLACE  " + target)
+        shutil.copy(self.formatPath(source), \
+                    self.formatPath(target))
+        pass
 
     def merge(self):
         if not self.checkExists(self.mTarget) or \
