@@ -475,7 +475,7 @@ def WriteFullOTAPackage(input_zip, output_zip):
     common.ZipWriteStr(output_zip, "recovery.img", recovery_img.data)
   script.ShowProgress(0.2, 0)
   if recovery_img and not device_specific.WriteRawImage("/recovery", "recovery.img"):
-    script.WriteRawImage2("recovery", "recovery.img")
+    script.WriteRawImage("/recovery", "recovery.img")
 
   script.Print("Update Boot image...")
   if boot_img:
