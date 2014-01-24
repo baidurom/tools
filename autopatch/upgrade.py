@@ -29,17 +29,17 @@ class Main:
             Main.usage()
             exit(1)
 
+        upgradeDir = sys.argv[1]
+        VersionTool.init(upgradeDir)
 
-        Config.UPGRADE_XML_DIR = sys.argv[1]
         romVersion = sys.argv[2]
-        upgradePatch = UpgradePatch()
         if n == 3:
             # No UPGRADE_VERSION is present ,use the latest
-            upgradeVersion = upgradePatch.getLatestPatch()
+            upgradeVersion = VersionTool.getLatestVersion()
         elif n >= 4:
             upgradeVersion = sys.argv[3]
 
-        Upgrade(upgradePatch).run(romVersion, upgradeVersion)
+        Upgrade().run(romVersion, upgradeVersion)
 
     @staticmethod
     def usage():
@@ -55,93 +55,77 @@ class Config:
     Configuration.
     """
 
-    UPGRADE_XML_DIR = sys.path[0] + "/upgrade/"
-
+    UPGRADE_DIR = sys.path[0] + "/upgrade/"
 
 class Upgrade:
 
-    versions = []
-
-    def __init__(self, upgradePatch):
-        self.initVersions(upgradePatch)
-
-    def initVersions(self, upgradePatch):
-        """
-        Initial an array of version numbers from upgrade patch
-        """
-
-        for item in upgradePatch.patches:
-            version = VersionTool.toVersion(item)
-            self.versions.append(version)
 
     def run(self, oldVersion, newVersion):
         """
         Upgrade from old version to new version
         """
 
-        oldVersion = VersionTool.toVersion(oldVersion)
-        newVersion = VersionTool.toVersion(newVersion)
+        oldVersion = VersionTool.toVersionDigit(oldVersion)
+        newVersion = VersionTool.toVersionDigit(newVersion)
 
         curVersion = oldVersion
-        for version in self.versions:
+        for versionName in VersionTool.mVersions:
             if curVersion >= newVersion:
                 break;
 
-            if curVersion < version:
-                self.processRevision(version)
+            if curVersion < VersionTool.toVersionDigit(versionName):
+                self.applyPatch(versionName)
                 curVersion += 1
 
-    def processRevision(self, version):
-        patchXML = VersionTool.toFilename(version)
-        autopatch.AutoPatch.apply(Config.UPGRADE_XML_DIR, patchXML)
-
-
-class UpgradePatch:
-    """
-    Patch of upgrade. These patches are in the directory of UPGRADE_XML_DIR.
-    """
-
-    patches = []
-
-    def __init__(self):
-        files = os.listdir(Config.UPGRADE_XML_DIR)
-        for f in files:
-            splitFilename = os.path.splitext(f)
-            if splitFilename[1] == ".xml":
-                self.patches.append(f)
-
-        self.patches.sort(cmp=VersionTool.comparator);
-        pass
-
-    def getLatestPatch(self):
-        size = len(self.patches)
-        return self.patches[size-1]
+    def applyPatch(self, versionName):
+        patchDir = Config.UPGRADE_DIR + versionName + "/"
+        patchXML = VersionTool.getPatch(versionName)
+        print "\n>>> " + versionName + " patches ..."
+        autopatch.AutoPatch.apply(patchDir, patchXML)
 
 
 class VersionTool:
-    """
-    Tool to handle version format
-    """
+
+    mVersions = []
 
     @staticmethod
-    def comparator(filename1, filename2):
+    def init(upgradeDir):
+        Config.UPGRADE_DIR = upgradeDir
+        subdirs = os.listdir(Config.UPGRADE_DIR)
+        for subdir in subdirs:
+            if subdir.startswith("ROM"):
+                VersionTool.mVersions.append(subdir)
+
+        VersionTool.mVersions.sort(cmp=VersionTool.comparator);
+        pass
+
+    @staticmethod
+    def getLatestVersion():
+        size = len(VersionTool.mVersions)
+        return VersionTool.mVersions[size-1]
+
+    @staticmethod
+    def getPatch(versionName):
+        # Compose the path of patch
+        return Config.UPGRADE_DIR + versionName + "/" + versionName + ".xml"
+
+    @staticmethod
+    def comparator(versionName1, versionName2):
         """
-        Comparator to sort the filename contains version number.
+        Comparator to sort the version name.
+        version name is like ROM39, ROM40, etc.
         """
 
-        version1 = VersionTool.toVersion(filename1)
-        version2 = VersionTool.toVersion(filename2)
+        version1 = VersionTool.toVersionDigit(versionName1)
+        version2 = VersionTool.toVersionDigit(versionName2)
         return version1 - version2
 
     @staticmethod
-    def toVersion(filename):
-        version = filter(str.isdigit, filename)
+    def toVersionDigit(versionName):
+        version = filter(str.isdigit, versionName)
         return string.atoi(version)
 
-    @staticmethod
-    def toFilename(version):
-        # TODO. Traverse the UPGRADE_XML_DIR to find the filename
-        return Config.UPGRADE_XML_DIR + ("ROM%s.xml" % version)
+
 
 if __name__ == "__main__":
     Main()
