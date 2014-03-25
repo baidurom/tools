@@ -4,128 +4,110 @@
 ### File Information ###
 """
 Upgrade ROM version automatically.
-Upgrade patches are defined in XML.
+Usage: upgrade.py FROM [TO]
+         - FROM: current version (e.g. ROM40)
+         - TO: version that upgrade to (e.g. ROM45). Default to be the latest version.
 """
 
 __author__ = 'duanqizhi01@baidu.com (duanqz)'
 
 
 
-### import block ###
-
 import os
 import sys
 import string
-
-import autopatch
-
-### Class definition ###
-
-class Main:
-
-    def __init__(self):
-        n = len(sys.argv)
-        if n <= 2:
-            Main.usage()
-            exit(1)
-
-        upgradeDir = sys.argv[1]
-        VersionTool.init(upgradeDir)
-
-        romVersion = sys.argv[2]
-        if n == 3:
-            # No UPGRADE_VERSION is present ,use the latest
-            upgradeVersion = VersionTool.getLatestVersion()
-        elif n >= 4:
-            upgradeVersion = sys.argv[3]
-
-        Upgrade().run(romVersion, upgradeVersion)
-
-    @staticmethod
-    def usage():
-        print "Usage: upgrade.py UPGRADE_DIR ROM_VERSION [UPGRADE_VERSION]"
-        print "        - UPGRADE_DIR: directory that contains upgrade patches (e.g. reference/autopatch/upgrade)"
-        print "        - ROM_VERSION: current version (e.g. ROM35)"
-        print "        - UPGRADE_VERSION: version that upgrade to (e.g. ROM39)."
-        print "                           if not present, will upgrade to the latest available"
+from autopatch import AutoPatch
+from config import Config, Log
 
 
-class Config:
-    """
-    Configuration.
-    """
+def usage():
+    print "\n"
+    print " Usage: upgrade.py FROM [TO]                                                                             "
+    print "        - FROM: current version (e.g. ROM40)                                                             "
+    print "        - TO: version that upgrade to (e.g. ROM45). If not present, will upgrade to the latest available."
+    print "\n"
 
-    UPGRADE_DIR = sys.path[0] + "/upgrade/"
 
 class Upgrade:
 
+    def __init__(self, upgradeFrom, upgradeTo):
+        self.run(upgradeFrom, upgradeTo)
 
     def run(self, oldVersion, newVersion):
-        """
-        Upgrade from old version to new version
+        """ Upgrade from old version to new version
         """
 
-        oldVersion = VersionTool.toVersionDigit(oldVersion)
-        newVersion = VersionTool.toVersionDigit(newVersion)
+        oldVersion = ROMVersion.toDigit(oldVersion)
+        newVersion = ROMVersion.toDigit(newVersion)
 
         curVersion = oldVersion
-        for versionName in VersionTool.mVersions:
+        for patchName in ROMVersion.mPatches:
             if curVersion >= newVersion:
                 break;
 
-            if curVersion < VersionTool.toVersionDigit(versionName):
-                self.applyPatch(versionName)
+            if curVersion < ROMVersion.toDigit(patchName):
+                self.applyPatch(patchName)
                 curVersion += 1
 
-    def applyPatch(self, versionName):
-        patchDir = Config.UPGRADE_DIR + versionName + "/"
-        patchXML = VersionTool.getPatch(versionName)
-        print "\n>>> " + versionName + " patches ..."
-        autopatch.AutoPatch.apply(patchDir, patchXML)
-
-
-class VersionTool:
-
-    mVersions = []
-
-    @staticmethod
-    def init(upgradeDir):
-        Config.UPGRADE_DIR = upgradeDir
-        subdirs = os.listdir(Config.UPGRADE_DIR)
-        for subdir in subdirs:
-            if subdir.startswith("ROM"):
-                VersionTool.mVersions.append(subdir)
-
-        VersionTool.mVersions.sort(cmp=VersionTool.comparator);
-        pass
-
-    @staticmethod
-    def getLatestVersion():
-        size = len(VersionTool.mVersions)
-        return VersionTool.mVersions[size-1]
-
-    @staticmethod
-    def getPatch(versionName):
-        # Compose the path of patch
-        return Config.UPGRADE_DIR + versionName + "/" + versionName + ".xml"
-
-    @staticmethod
-    def comparator(versionName1, versionName2):
-        """
-        Comparator to sort the version name.
-        version name is like ROM39, ROM40, etc.
+    def applyPatch(self, patchName):
+        """ Apply the patch.
         """
 
-        version1 = VersionTool.toVersionDigit(versionName1)
-        version2 = VersionTool.toVersionDigit(versionName2)
+        patchXML = os.path.join(Config.UPGRADE_DIR, patchName)
+        Config.setPatchXML(patchXML)
+
+        # Append the last BOSP directory to arguments list
+        if os.path.exists(Config.UPGRADE_LAST_BAIDU_DIR) and \
+           os.path.exists(Config.UPGRADE_BAIDU_DIR) :
+            Config.setDiffDir(Config.UPGRADE_LAST_BAIDU_DIR, Config.UPGRADE_BAIDU_DIR)
+
+        Log.i("\n>>> Patching " + patchName + "\t[Diff from " + Config.OLDER_DIR + " to " + Config.NEWER_DIR + " ]")
+        AutoPatch()
+
+
+class ROMVersion:
+    """ Model of the ROM versions.
+    """
+
+    mPatches = []
+
+    def __init__(self):
+        patches = os.listdir(Config.UPGRADE_DIR)
+        for patch in patches:
+            if patch.startswith("ROM"):
+                ROMVersion.mPatches.append(patch)
+
+        ROMVersion.mPatches.sort(cmp=ROMVersion.comparator);
+
+    def getLatestVersion(self):
+        size = len(ROMVersion.mPatches)
+        return ROMVersion.mPatches[size-1]
+
+    @staticmethod
+    def comparator(patchName1, patchName2):
+        """ Comparator to sort the patch name.
+            Patch name is like ROM39, ROM40, etc.
+        """
+
+        version1 = ROMVersion.toDigit(patchName1)
+        version2 = ROMVersion.toDigit(patchName2)
         return version1 - version2
 
     @staticmethod
-    def toVersionDigit(versionName):
-        version = filter(str.isdigit, versionName)
+    def toDigit(patchName):
+        version = filter(str.isdigit, patchName)
         return string.atoi(version)
 
 
 
 if __name__ == "__main__":
-    Main()
+    argc = len(sys.argv)
+    if argc <= 1:
+        usage()
+        exit(1)
+
+    upgradeTo = ROMVersion().getLatestVersion()
+    if argc > 1: upgradeFrom = sys.argv[1]
+    if argc > 2: upgradeTo = sys.argv[2]
+
+    Upgrade(upgradeFrom, upgradeTo)

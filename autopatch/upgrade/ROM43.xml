@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<features>
+
+    <feature require="OPTION" description="Add phone label info to CallerInfo" >
+        <revise action="REPLACE" target="framework.jar.out/smali/com/android/internal/telephony/CallerInfoAsyncQuery*" />
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/telephony/CallerInfo.smali" />
+    </feature>
+
+</features>

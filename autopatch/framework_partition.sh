@@ -67,8 +67,9 @@ function combine_frameworks()
 
 	# Also need to combine baidu secondary-framework (if exists) into framework.
 	# It is not necessary to revert it.
-	if [ -d ${PWD}/baidu/smali/secondary_framework.jar.out ]; then
-		cp -r ${PWD}/baidu/smali/secondary_framework.jar.out/smali ${PWD}/baidu/smali/framework.jar.out
+	local BOSP_ROOT=${PWD}/autopatch/bosp
+	if [ -d ${BOSP_ROOT}/secondary_framework.jar.out ]; then
+		cp -r ${BOSP_ROOT}/secondary_framework.jar.out/smali ${BOSP_ROOT}/framework.jar.out
 	fi
 }
 
@@ -108,8 +109,8 @@ function revert_frameworks()
 if [ $# != 1 ];then
 	usage;
 	exit 1;
-elif [ "$1" = "-combine" ];then
+elif [ "$1" == "-combine" ];then
 	combine_frameworks;
-elif [ "$1" = "-revert" ];then
+elif [ "$1" == "-revert" ];then
 	revert_frameworks;
 fi

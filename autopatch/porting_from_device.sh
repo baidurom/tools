@@ -4,23 +4,32 @@
 #
 # Porting commits from DEVICE to current
 #
-# @Parameter 1: DEVICE
-# @Parameter 2: BRANCH on DEVICE
 #
-# @author: duanqizhi01@baidu.com(duanqz)
+# @author: duanqz@gmail.com
 #
 
 
 DEVICE=${1}
-BRANCH=${2}
+NUM=${2}
 
-DEVICES_DIR=${PORT_ROOT}/devices
+
+DEVICE_DIR=${PORT_ROOT}/devices/${DEVICE}
 
 function usage()
 {
-	echo "Usage: porting_from_device.sh DEVICE BRANCH"
-	echo "    e.g.: porting_from_device.sh maguro coron-4.2"
-	echo ""
+	echo "Usage: porting_from_device.sh DEVICE [NUM]                                            "
+	echo "                                                                                      "
+	echo "       - DEVICE the source device you porting from                                    "
+	echo "                                                                                      "
+	echo "       - NUM the number of latest commits you would like to pick                      "
+	echo "             if not present, an interactive UI will show for you to choose the commit "
+	echo "                                                                                      "
+	echo "      e.g. porting_from_device.sh maguro                                              "
+	echo "           Porting commits from maguro interactively, maguro is an existing device    "
+	echo "                                                                                      "
+	echo "      e.g. porting_from_device.sh maguro 3                                            "
+	echo "           Porting the latest 3 commits from maguro quietly.                          "
+	echo "                                                                                      "
 }
 
 #
@@ -28,38 +37,13 @@ function usage()
 #
 function check_device_exists()
 {
-	local device_dir=${DEVICES_DIR}/${DEVICE};
-
-	if 	[ ! -e ${device_dir}/Makefile ] && \
-		[ ! -e ${device_dir}/makefile ]; then
+	if 	[ ! -e ${DEVICE_DIR}/Makefile ] && \
+		[ ! -e ${DEVICE_DIR}/makefile ]; then
 		echo "ERROR: Invalid device ${DEVICE}.";
 		exit 1;
 	fi
 }
 
-#
-# Fetch the DEVICE repository to local url, so that we can pick commits.
-# The local url is named by DEVICE
-#
-# Note: It is time-cost when first time fetch.
-#
-function fetch_device_repository()
-{
-	# The first time should fetch the git repository of source device.
-	local result=`git remote -v | grep -w "(fetch)" | grep -w "${DEVICE}"`;
-
-	# Local url is named by DEVICE
-	if [ -z "${result}" ]; then
-		local old_pwd=`pwd`;
-		cd ${DEVICES_DIR}/${DEVICE};
-		git checkout -b ${BRANCH};
-		cd ${old_pwd};
-
-		git remote add ${DEVICE} ${DEVICES_DIR}/${DEVICE};
-	fi
-
-	git fetch ${DEVICE}
-}
 
 #
 # Initialize all commits of device on branch.
@@ -68,8 +52,12 @@ function fetch_device_repository()
 ALL_COMMITS=
 function init_device_all_commits()
 {
+	cd ${DEVICE_DIR}
+
 	# Retrieve all commits of the device.
-	ALL_COMMITS=$(git log ${DEVICE}/${BRANCH} --oneline | cut -d' ' -f1);
+	ALL_COMMITS=$(git log --oneline | cut -d' ' -f1);
+
+	cd - > /dev/null
 }
 
 #
@@ -129,8 +117,8 @@ function get_commits_by_range()
 function choose_commits_range_automatically()
 {
 	LOWER_COMMIT=`echo ${ALL_COMMITS} | cut -d" " -f1`
-	UPPER_COMMIT=`echo $ALL_COMMITS | awk '{print $(NF-2)}'`
-	echo ">>> Automatically choose a range of commits: [$UPPER_COMMIT  $LOWER_COMMIT]"
+	#UPPER_COMMIT=`echo ${ALL_COMMITS} | awk '{print $(NF-2)}'`
+	echo ">>> Automatically choose lastest commits: [$LOWER_COMMIT]"
 }
 
 #
@@ -140,16 +128,29 @@ LOWER_COMMIT=
 UPPER_COMMIT=
 function read_user_input()
 {
-	echo ">>> All the commits on branch [${BRANCH}] of [${DEVICE}] are:";
-	git log ${DEVICE}/${BRANCH} --oneline;
-	echo "";
-	echo ">>> Choose a range of commits you would like to pick...";
-	read -p "(Press Enter will pick automatically): " LOWER_COMMIT UPPER_COMMIT;
+	echo ">>> All the commits of [${DEVICE}] are:";
+	cd ${DEVICE_DIR}
+	git log --oneline | tee
+	cd - > /dev/null
+
+	echo ""
+	echo "  +-----------------------------------------------------------------------";
+	echo "  |  Each 7 bits SHA1 code identify a specific commit on [${DEVICE}],     ";
+	echo "  |  you could select one of them to port onto your own device.           ";
+	echo "  |  If you would like to port a range of commits, select two as a range. ";
+	echo "  +-----------------------------------------------------------------------";
+	echo ""
+
+	read -p ">>> Select the 7 bits SHA1 commit ID (q to exit): " LOWER_COMMIT UPPER_COMMIT;
+
+	[ ${LOWER_COMMIT} == "q" ] && exit 0 
 
 	[ -z ${LOWER_COMMIT} ] && [ -z ${UPPER_COMMIT} ] && choose_commits_range_automatically && return;
 
 	echo ">>> Manually choose a range of commits [${LOWER_COMMIT} ${UPPER_COMMIT}]";
 }
+
+
 
 #
 # Pick each commit independently.
@@ -158,38 +159,52 @@ function pick_one_commit()
 {
 	local commit=${1};
 
-	local result=`git cherry-pick ${commit}`;
+	local old_pwd=`pwd`
+	local porting_dir=${old_pwd}/autopatch/porting
+	[ ! -e ${porting_dir} ] && mkdir -p ${porting_dir}
 
-	local error=`echo ${result} | grep -w "error:" | cut -d":" -f1`;
-	if [ "${error}" = "error" ]; then
-		exit 1;
-	fi
+	cd ${DEVICE_DIR}
+	local patch=`git format-patch -1 ${commit}`
+	mv ${patch} ${porting_dir}
+	cd ${old_pwd}
 
-	echo "Pick ${commit} successfully."
+	# -m Merge using conflict markers instead of creating reject files.
+	# -t Ask no questions; skip bad-Prereq patches; assume reversed.
+	patch -p1 -t -m < ${porting_dir}/${patch}
+
+	rm ${porting_dir}/${patch}
 }
+
+
 
 #
 # Pick commits from DEVICE and porting to current device
 #
 function porting_commits()
 {
-	read_user_input;
+	if [ -z ${NUM} ]; then
+		read_user_input;
+	elif [ ${NUM} -gt 0 ]; then
+		LOWER_COMMIT=`echo ${ALL_COMMITS} | cut -d" " -f1`
+		UPPER_COMMIT=`echo ${ALL_COMMITS} | cut -d" " -f${NUM}`
+	fi
 
 	get_commits_by_range ${LOWER_COMMIT} ${UPPER_COMMIT};
 
-	# Pick each commit in COMMITS_RANGE reversely
+	# Pick each commit in COMMITS_RANGE
 	for commit in `echo ${COMMITS_RANGE} | tac -s" "`
 	do
-		pick_one_commit $commit
+		pick_one_commit ${commit}
 	done
+
+	# Delete unnecessary files
+	find . -name *.orig | xargs rm -rf
 }
 
 
 function main()
 {
 	check_device_exists;
-
-	fetch_device_repository;
 
 	init_device_all_commits;
 

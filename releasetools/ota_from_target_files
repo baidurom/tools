@@ -356,6 +356,7 @@ def AddBaiduServices(output_zip):
     print "add baidu's service to install-recovery.sh"
     sh = "%s\n/system/bin/baidu_service &\n" %sh
     common.ZipWriteStr(output_zip, "recovery/etc/install-recovery.sh", sh)
+    common.ZipWriteStr(output_zip, "system/etc/install-recovery.sh", sh)
     Item.Get("system/etc/install-recovery.sh", dir=False)
   except:
     print "baidu_service doesn't exist! ignore..."
