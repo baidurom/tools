@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<features>
+
+    <feature require="OPTION" description="Add isLowRamDevice interface to switch some features" >
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityManager.smali" />
+    </feature>
+
+</features>

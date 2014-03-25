@@ -141,8 +141,59 @@ function recover_symlink {
 	fi
 }
 
+function turnModToNum {
+    mod=$1
+    ((num=2#$(echo $mod | sed 's/[^\-]/1/g; s/\-/0/g')))
+    echo $num
+}
+
+function addReadMod {
+    sFile=$1
+
+    sFileMod=$(adb shell ls -l $sFile | awk '{print $1}')
+    ownMod=${sFileMod:1:3}
+    grpMod=${sFileMod:4:3}
+    otherMod="r"${sFileMod:8:2}
+
+    newMod=$(turnModToNum $ownMod)$(turnModToNum $grpMod)$(turnModToNum $otherMod)
+
+    if [ "x$newMod" != "x" ];then
+        if [ x"$ROOT_STATE" = x"system_root" ]; then
+            adb shell "su -c \"mount -o remount,rw /system; chmod $newMod $sFile; exit;\""
+        else
+            echo "mount -o remount,rw /system; chmod $newMod $sFile;exit" | adb shell
+        fi
+    fi
+}
+
+function pullFailedFailes {
+    failedLog=$1
+    times=$2
+    tmpLog=$(mktemp -t "tmp.pull.XXXXX")
+
+    grep "^failed to copy" $failedLog | while read LINE
+    do
+        sFile=$(echo $LINE | awk -F \' '{print $2}')
+        outFile=$(echo $LINE | awk -F \' '{print $4}')
+
+        addReadMod $sFile
+        adb pull $sFile $outFile 2>&1 | grep "^failed to copy" | tee $tmpLog
+    done
+
+    if [ $(test -s $tmpLog) ]; then
+         times=$(expr $times - 1)
+         if [ $times -gt 0 ]; then
+             pullFailedFailes $tmpLog
+         else
+             cat $tmpLog > $OUT_DIR/system-pull-failed.log
+         fi
+    fi
+    rm $tmpLog
+}
+
 function deal_with_system_pull_log {
-	cat $OUT_DIR/system-pull.log | grep "^failed to copy" > $OUT_DIR/system-pull-failed.log
+	pullLog=$1
+	pullFailedFailes $pullLog 20
 	if [ -s $OUT_DIR/system-pull-failed.log ];then
 		echo "-------------------------------------------------------" > $OUT_DIR/build-info-to-user.txt
 		echo "Some files those pull failed you must deal with manually:" >> $OUT_DIR/build-info-to-user.txt
@@ -161,7 +212,7 @@ function build_SYSTEM {
     adb pull /system $SYSTEM_DIR 2>&1 | tee $OUT_DIR/system-pull.log
     find $SYSTEM_DIR -name su | xargs rm -f
     find $SYSTEM_DIR -name invoke-as | xargs rm -f
-	deal_with_system_pull_log
+	deal_with_system_pull_log $OUT_DIR/system-pull.log
 
     build_filesystem_config
     recover_symlink

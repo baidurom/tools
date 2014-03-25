@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<features>
+
+    <feature require="OPTION" description="Contact's photograph optimization">
+        <revise action="REPLACE" target="framework.jar.out/smali/android/widget/QuickContactBadge*" />
+    </feature>
+
+    <feature require="OPTION" description="Prehandle incoming short message for Baidu">
+        <revise action="ADD"   target="telephony-common.jar.out/smali/com/android/internal/telephony/SMSDispatcher$TrafficMonitorMessageReceiverClass.smali" />
+        <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/SMSDispatcher.smali" />
+    </feature>
+
+    <feature require="OPTION" description="Network firewall policy">
+        <revise action="MERGE" target="framework.jar.out/smali/android/net/NetworkPolicyManager.smali" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/net/NetworkPolicyManagerService.smali" />
+    </feature>
+
+    <feature require="OPTION" description="Hook to reorder SMS broadcast">
+        <!-- Already merged in bringup
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityManagerService.smali" />
+        -->
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/BroadcastRecord.smali" />
+    </feature>
+
+    <feature require="OPTION" description="Baidu default ringtone settings">
+        <revise action="MERGE" target="framework.jar.out/smali/android/provider/Settings$System.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/media/MediaScanner$MyMediaScannerClient.smali" />
+    </feature>
+
+    <feature require="OPTION" description="Baidu Lockscreen">
+        <revise action="ADD"   	 target="framework.jar.out/smali/com/android/internal/widget/DragView.smali" />
+        <revise action="MERGE" 	 target="framework.jar.out/smali/com/android/internal/widget/LockPatternUtils.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/com/android/internal/widget/DigitalClock.smali" />
+    </feature>
+
+    <feature require="OPTION" description="Dynamic permission checking">
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ContextImpl$ApplicationContentResolver.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/Instrumentation.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/location/LocationManager.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/net/ConnectivityManager.smali" />
+        <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/IccSmsInterfaceManager.smali" />
+    </feature>
+
+    <feature require="OPTION" description="Baidu Backup service">
+        <revise action="REPLACE" target="services.jar.out/smali/com/android/server/BackupManagerService*" />
+    </feature>
+
+    <feature require="OPTION" description="Baidu TextView" >
+        <revise target="framework.jar.out/smali/android/widget/Editor*" action="REPLACE" />
+        <revise target="framework.jar.out/smali/android/widget/TextView.smali" action="REPLACE" />
+        <revise target="framework.jar.out/smali/android/widget/TextView$ChangeWatcher.smali" action="REPLACE" />
+        <revise target="framework.jar.out/smali/android/text/Layout.smali" action="REPLACE" />
+        <revise target="framework.jar.out/smali/com/android/internal/util/SearchHelper.smali" action="ADD" />
+        <revise target="framework.jar.out/smali/com/android/internal/util/WordSegment.smali" action="ADD" />
+        <revise target="framework.jar.out/smali/com/android/internal/widget/PopupLayout.smali" action="ADD" />
+        <revise target="framework.jar.out/smali/com/android/internal/widget/MagnifierView.smali" action="ADD" />
+        <revise target="framework.jar.out/smali/android/widget/MagnifierView2.smali" action="ADD" />
+        <revise target="framework.jar.out/smali/android/widget/MagnifierController.smali" action="ADD" />
+        <revise target="framework.jar.out/smali/android/widget/MagnifierController$1.smali" action="ADD" />
+    </feature>
+
+    <feature require="OPTION" description="Baidu Multi Theme" >
+        <revise action="ADD" target="framework.jar.out/smali/android/content/ThemeDefine.smali"/>
+        <revise action="ADD" target="framework.jar.out/smali/android/content/res/Resources$1.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/content/res/Resources.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/com/android/internal/app/ActionBarImpl.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/com/android/internal/widget/ActionBarView*" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/view/VolumePanel*" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/Intent.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/pm/ActivityInfo.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/res/AssetManager.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/res/AssetManager$AssetInputStream.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/res/Configuration.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityThread.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityThread$2.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ApplicationPackageManager.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ContextImpl.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/view/WindowManager$LayoutParams.smali" />
+        <!-- Aready merged in Feature "Hook to reorder SMS broadcast"
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityManagerService.smali" />
+        -->
+    </feature>
+
+    <feature require="OPTION" description="Missed methods and fields" >
+        <!-- Quick boot feature -->
+    	<revise action="REPLACE" target="services.jar.out/smali/com/android/server/am/QuickbootActivityManagerServiceHook*" />
+    </feature>
+
+    <feature require="OPTION" description="Add channel provider and push" >
+        <!-- Already merged in Feature "Baidu Multi Theme"
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityThread.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/res/AssetManager.smali" />
+        -->
+    </feature>
+
+    <feature require="OPTION" description="Use flags to indicator results" >
+        <!-- Already merged in Feature "Baidu Multi Theme"
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/Intent.smali" />
+        -->
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityStack.smali" />
+    </feature>
+
+    <feature require="OPTION" description="Add back pad listener" >
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/Activity.smali" />
+    </feature>
+
+</features>

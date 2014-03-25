@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge>
+
+    <item action="REPLACE"
+          anchor="persist.sys.usb.config.*"
+          match="REGEX">
+    persist.sys.usb.config=adb
+    </item>
+
+    <item action="REPLACE"
+          anchor="ro.secure.*"
+          match="REGEX">
+    ro.secure=0
+    </item>
+
+    <item action="REPLACE"
+          anchor="ro.debuggable.*"
+          match="REGEX">
+    ro.debuggable=1
+    </item>
+
+    <item action="ADD"
+          position="OVER"
+          anchor="EOF">
+persist.service.adb.enable=1
+    </item>
+
+</merge>
