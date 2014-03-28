@@ -36,6 +36,9 @@ KEY_TRANSIENT = "transient"
 KEY_VOLATILE = "volatile"
 
 MAX_INVOKE_LEN = 5
+DEBUG = True
+
+DEFAULT_SUPER = r'Ljava/lang/Object;'
 
 class Smali(object):
     '''
@@ -57,6 +60,9 @@ class Smali(object):
         self.mSuperClassName = None
         self.mSourceName = None
         self.mPackageName = None
+        self.mUsedOutsideFields = None
+        self.mUsedFields = None
+        self.mIsPartSmali = SmaliParser.isPartSmaliFile(smaliFilePath)
  
     def useField(self, name):
         pass
@@ -158,8 +164,12 @@ class Smali(object):
                 self.mSuperClassName = entryList[0].getName()
             else:
                 # java/lang/Object doesn't have super
-                assert SmaliParser.getClassFromPath(self.mPath) == "Ljava/lang/Object;", "Wrong smali, should define the super! (%s)" % (self.mPath)
-                self.mSuperClassName = None
+                if SmaliParser.getClassFromPath(self.mPath) != DEFAULT_SUPER:
+                    if not self.mIsPartSmali:
+                        print "Wrong smali, should define the super! (%s)" % (self.mPath)
+                    self.mSuperClassName = DEFAULT_SUPER
+                else:
+                    self.mSuperClassName = None
         return self.mSuperClassName
         
     def getImplementClassList(self):
@@ -200,8 +210,12 @@ class Smali(object):
         if self.mClassName is None:
             entryList = self.getEntryList(SmaliEntry.CLASS, None, None, 1)
         
-            assert len(entryList) == 1, "Error: should has only one class define! (%s)" %(self.mPath)
-            self.mClassName = entryList[0].getName()
+            if len(entryList) != 1:
+                if not self.mIsPartSmali:
+                    print "Warning: should has only one class define! (%s)" %(self.mPath)
+                self.mClassName = SmaliParser.getClassFromPath(self.getPath())
+            else:
+                self.mClassName = entryList[0].getName()
         return self.mClassName
     
     def getClassBaseName(self):
@@ -252,7 +266,6 @@ class Smali(object):
             usedFieldsList.extend(entry.getUsedFields())
         return usedFieldsList
     
-    
     def getUsedFields(self, filterInList = None):
         if self.mUsedFields is None:
             self.mUsedFields = self.__getUsedFields__()
@@ -268,6 +281,16 @@ class Smali(object):
                     break;
         
         return outUsedMethodsList
+    
+    def getUsedOutsideFields(self):
+        if self.mUsedOutsideFields is None:
+            usedFileds = self.getUsedFields()
+            usedOutsideFields = []
+            for usedFieldItem in usedFileds:
+                if not usedFieldItem.cls == self.getClassName() or not self.hasField(usedFieldItem.field):
+                    usedOutsideFields.append(usedFieldItem)
+            self.mUsedOutsideFields = usedOutsideFields
+        return self.mUsedOutsideFields
     
     def getAllMethods(self):
         return self.mAllMethods;
@@ -320,6 +343,20 @@ class Smali(object):
         sHeadFile.close()
 
         return partList
+
+    def format(self, formatMap):
+        modified = False
+        for entry in self.getEntryList():
+            if entry.format(formatMap):
+                modified = True
+        return modified
+
+    def out(self, outPath = None):
+        if outPath is None:
+            outPath = self.getPath()
+        sFile = file(outPath, "w+")
+        sFile.write(self.toString())
+        sFile.close()
 
 DEFAULT_HASH_LEN = 6
 def getHashCode(name, len = DEFAULT_HASH_LEN):

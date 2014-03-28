@@ -92,7 +92,10 @@ class SmaliEntry(object):
         and sEntry.mContent == self.mContent:
             return True
         return False
-    
+
+    def format(self, formatMap):
+        return False
+
     def getFirstLine(self):
         if self.mFirstLine is None: 
             self.mFirstLine = self.getContent().getFirstLine()

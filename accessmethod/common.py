@@ -248,7 +248,7 @@ class AccessSmali:
 
     def addMethod(self, num, name):
         if num in self.methodNumSet.keys():
-            raise ValueError("Access Method Num Duplicate")
+            return
         else:
             self.methodNumSet[num] = name
         if name not in self.methodNameSet.keys():
@@ -258,7 +258,7 @@ class AccessSmali:
         if name not in self.methodNameSet.keys():
             self.methodNameSet[name] = num
         else:
-            raise ValueError("Access Method Name Duplicate")
+            return
 
     def createNumMap(self):
         for num in self.methodNumSet.keys():

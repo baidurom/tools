@@ -20,6 +20,7 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from smaliparser.Smali import Smali
 from accessmethod.name2num import NameToNumForOneFile
 from accessmethod.num2name import NumToNameForOneFile
+from format import Format
 
 
 
@@ -52,15 +53,9 @@ class DiffPatch():
             Return True if no conflicts, otherwise return False.
         """
 
+        self.prepare()
+
         noConflict = True
-
-        DiffPatch.prepare()
-
-        # Access method number to name
-        targetReverse = NumToNameForOneFile(self.mTarget)
-        olderReverse  = NumToNameForOneFile(self.mOlder)
-        newerReverse  = NumToNameForOneFile(self.mNewer)
-
 
         # Split the target, older and newer
         targetSplitter = Splitter().split(self.mTarget, DiffPatch.TARGET_OUT)
@@ -72,22 +67,23 @@ class DiffPatch():
             targetPart = targetSplitter.match(newerPart)
             olderPart  = olderSplitter.match(newerPart)
 
-            if not os.path.exists(olderPart) and \
-               not os.path.exists(targetPart):
-                targetSplitter.appendPart(newerPart)
+            if not os.path.exists(olderPart):
+                if not os.path.exists(targetPart):
+                    # newer not exist in target
+                    targetSplitter.appendPart(newerPart)
+                else:
+                    # newer already exist in target
+                    pass
+
                 continue
- 
+
+
             noConflict &= DiffPatch.__shellDiff3(targetPart, olderPart, newerPart)
 
         # Join the partitions
         targetSplitter.join()
 
-        # Access method name to number
-        NameToNumForOneFile(targetReverse)
-        NameToNumForOneFile(olderReverse)
-        NameToNumForOneFile(newerReverse)
- 
-        DiffPatch.clean()
+        self.clean()
 
         if not noConflict: Log.d("  [Conflict happened]")
         return noConflict
@@ -98,13 +94,10 @@ class DiffPatch():
             Return True if no conflict, otherwise return False
         """
 
-        (targetNoLine, targetPatch) = Utils.remLines(target)
-        olderNoLine  = Utils.remLines(older)[0]
-        newerNoLine = Utils.remLines(newer)[0]
 
         # Exit status is 0 if successful, 1 if conflicts, 2 if trouble
         cmd = "diff3 -E -m -L VENDOR %s -L AOSP %s -L BOSP %s" % \
-                (commands.mkarg(targetNoLine), commands.mkarg(olderNoLine), commands.mkarg(newerNoLine))
+                (commands.mkarg(target), commands.mkarg(older), commands.mkarg(newer))
         (status, output) = commands.getstatusoutput(cmd)
 
         if status != 2:
@@ -112,24 +105,23 @@ class DiffPatch():
             targetFile = open(target, "wb")
             targetFile.write("%s\n" % output)
             targetFile.close()
- 
-        Utils.addLines(target, targetPatch)
-        if fnmatch.fnmatch(target, "*.xml"):
-            os.remove(targetNoLine)
-            os.remove(targetPatch)
- 
+
         return status == 0
 
-    @staticmethod
-    def prepare():
+    def prepare(self):
         for tmpDir in (DiffPatch.TARGET_OUT, DiffPatch.OLDER_OUT, DiffPatch.NEWER_OUT):
             if not os.path.exists(tmpDir): os.makedirs(tmpDir)
 
-    @staticmethod
-    def clean():
+        action = Format.REMOVE_LINE | Format.ACCESS_TO_NAME | Format.RESID_TO_NAME
+        self.mFormatTarget = Format(Config.PRJ_ROOT, self.mTarget).do(action)
+        Format(Config.OLDER_DIR, self.mOlder).do(action)
+        Format(Config.NEWER_DIR, self.mNewer).do(action)
+
+    def clean(self):
+        self.mFormatTarget.undo()
+
         for tmpDir in (DiffPatch.TARGET_OUT, DiffPatch.OLDER_OUT, DiffPatch.NEWER_OUT):
             shutil.rmtree(tmpDir)
-
 
 class Splitter:
     """ Splitter of smali file
@@ -186,46 +178,9 @@ class Splitter:
 
         return self
 
-class Utils:
-
-    NOLINE_SUFFIX = ".noline"
-    LINEPATCH_SUFFIX = ".linepatch"
-
-    @staticmethod
-    def remLines(origFile):
-        """ Remove lines in original file
-        """
-
-        noLineFile = origFile + Utils.NOLINE_SUFFIX
-
-        # Generate no line file
-        cmd = "cat %s | sed -e '/^\s*\.line.*$/d' | sed -e 's/\/jumbo//' > %s" % \
-                (commands.mkarg(origFile), commands.mkarg(noLineFile))
-        commands.getstatusoutput(cmd)
-
-        # Generate line patch
-        linesPatch = origFile + Utils.LINEPATCH_SUFFIX
-        cmd = "diff -B -u %s %s > %s" % \
-                (commands.mkarg(noLineFile), commands.mkarg(origFile), commands.mkarg(linesPatch))
-        commands.getstatusoutput(cmd)
-
-        return noLineFile, linesPatch
-
-    @staticmethod
-    def addLines(noLineFile, linesPatch):
-        """ Add the lines back to no line file
-        """
-
-        # Patch the lines to no line file
-        cmd = "patch -f %s -r /dev/null < %s > /dev/null" % \
-                (commands.mkarg(noLineFile), commands.mkarg(linesPatch))
-        commands.getstatusoutput(cmd)
-
-        return noLineFile
-
 
 if __name__ == "__main__":
     target = "/media/source/smali/smali-4.2/devices/p6/framework.jar.out/smali/android/content/res/AssetManager.smali"
     older  = "/media/source/smali/smali-4.2/devices/p6/autopatch/aosp/framework.jar.out/smali/android/content/res/AssetManager.smali"
     newer  = "/media/source/smali/smali-4.2/devices/p6/autopatch/bosp/framework.jar.out/smali/android/content/res/AssetManager.smali"
-    DiffPatch().diff3(target, older, newer)
+    DiffPatch(target, older, newer).run()

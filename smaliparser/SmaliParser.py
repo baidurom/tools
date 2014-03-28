@@ -8,6 +8,7 @@ import os
 import SmaliEntryFactory
 import Smali
 import re
+import utils
 
 from Content import Content
 from SmaliLine import SmaliLine
@@ -15,7 +16,7 @@ from SmaliLine import SmaliLine
 SMALI_POST_SUFFIX = r'\.smali'
 PART_SMALI_POST_SUFFIX = r'\.smali\.part'
 SMALI_POST_SUFFIX_LEN = 6
-
+DEBUG = False
 
 class SmaliParser(object):
     '''
@@ -52,7 +53,10 @@ class SmaliParser(object):
         fileLinesList = file(self.mSmaliFilePath).readlines()
         idx = 0
         while idx < len(fileLinesList):
-            sLine = SmaliLine(fileLinesList[idx][0:-1])
+            if fileLinesList[idx][-1] == "\n":
+                sLine = SmaliLine(fileLinesList[idx][0:-1])
+            else:
+                sLine = SmaliLine(fileLinesList[idx])
             
             if sLine.getType() is SmaliLine.TYPE_DOT_LINE:
                 if sLine.isDotEnd():
@@ -118,6 +122,7 @@ class SmaliParser(object):
             if self.mEntryList[idx] == entry:
                 del self.mEntryList[idx]
                 return True
+            idx = idx + 1
         return False
     
     def addEntry(self, entry):
@@ -131,12 +136,17 @@ class SmaliParser(object):
         return True
 
 smaliFileRe = re.compile(r'(?:^.*%s$)|(?:^.*%s$)' % (SMALI_POST_SUFFIX, PART_SMALI_POST_SUFFIX))
+partSmaliFileRe = re.compile(r'(?:^.*%s$)' %(PART_SMALI_POST_SUFFIX))
 def isSmaliFile(smaliPath):
     return bool(smaliFileRe.match(smaliPath))
+
+def isPartSmaliFile(smaliPath):
+    return bool(partSmaliFileRe.match(smaliPath))
 
 def getSmaliPathList(source):
     filelist = []
     
+    source = os.path.abspath(source)
     if os.path.isfile(source):
         if isSmaliFile(source):
             filelist.append(source)
@@ -157,14 +167,28 @@ def getPackageFromClass(className):
         return None
     return className[1:idx]
 
-def getSmaliDict(smaliDir):
+def __shouldFilter(filterOutDirList, sPath):
+    if filterOutDirList is None:
+        return False
+    for dir in filterOutDirList:
+        try:
+            if sPath.index(dir) == 0:
+                if DEBUG:
+                    print ">>> filter path: %s" %sPath
+                return True
+        except:
+            pass
+    return False
+
+def getSmaliDict(smaliDir, filterOutDirList = None):
     sFileList = getSmaliPathList(smaliDir)
     smaliDict = {}
     
     for sPath in sFileList:
-        smali = Smali.Smali(sPath)
-        sClass = getClassFromPath(sPath)
-        smaliDict[sClass] = smali
+        if not __shouldFilter(filterOutDirList, sPath):
+            smali = Smali.Smali(sPath)
+            sClass = getClassFromPath(sPath)
+            smaliDict[sClass] = smali
        
     return smaliDict
 

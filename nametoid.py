@@ -25,12 +25,15 @@ class nametoid(object):
         '''
         Constructor
         '''
-	print ">>> start change name to id: %s" %inDir
+
         self.publicXml = minidom.parse(publicXml)
         self.smaliFileList = self.getInFileList(inDir)
         self.nameToIdMap = self.getNameToIdMap()
 
     def getInFileList(self, inDir):
+        if os.path.isfile(inDir):
+            return [inDir]
+
         filelist = []
         smaliRe = re.compile(r'.*\.smali')
         for root, dirs, files in os.walk(inDir):
@@ -79,20 +82,28 @@ class nametoid(object):
                     newArrIdStr = self.getArrayStr(arrId)
                     fileStr = fileStr.replace(matchArrName, newArrIdStr)
                     modify = True
-                    print ">>> change array name from %s to id %s" % (matchArrName[1:-2], newArrIdStr)
+                    Log.d(">>> change array name from %s to id %s" % (matchArrName[1:-2], newArrIdStr))
 
             for matchName in normalNameRule.findall(fileStr):
                 newId = self.nameToIdMap.get(matchName[1:-2], None)
                 if newId is not None:
                     fileStr = fileStr.replace(matchName, newId)
                     modify = True
-                    print ">>> change name from %s to id %s" % (matchName[1:-2], newId)
+                    Log.d(">>> change name from %s to id %s" % (matchName[1:-2], newId))
 
             if modify is True:
                 sf.seek(0, 0)
                 sf.truncate()
                 sf.write(fileStr)
             sf.close()
+
+class Log:
+    DEBUG = False
+
+    @staticmethod
+    def d(message):
+        if Log.DEBUG: print message
+
 def main():
     if len(sys.argv) == 3:
         nametoid(sys.argv[1], sys.argv[2]).nametoid()
