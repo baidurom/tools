@@ -90,3 +90,15 @@ class SmaliMethod(SmaliEntry):
             self.mUsedFields = self.__getUsedFields__()
 
         return self.mUsedFields
+
+    def format(self, formatMap):
+        entryStr = self.getContentStr()
+        modifed = False
+        for usedFieldItem in self.getUsedFields():
+            key = r'%s->%s' %(usedFieldItem.cls, usedFieldItem.field)
+            if formatMap.has_key(key):
+                modifed = True
+                entryStr = entryStr.replace(key, formatMap[key])
+        if modifed:
+            self.setContentStr(entryStr)
+        return modifed

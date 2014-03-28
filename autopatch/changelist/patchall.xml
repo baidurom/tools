@@ -61,8 +61,7 @@
 
     <feature require="OPTION" description="Baidu Multi Theme" >
         <revise action="ADD" target="framework.jar.out/smali/android/content/ThemeDefine.smali"/>
-        <revise action="ADD" target="framework.jar.out/smali/android/content/res/Resources$1.smali" />
-        <revise action="REPLACE" target="framework.jar.out/smali/android/content/res/Resources.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/content/res/Resources*" />
         <revise action="REPLACE" target="framework.jar.out/smali/com/android/internal/app/ActionBarImpl.smali" />
         <revise action="REPLACE" target="framework.jar.out/smali/com/android/internal/widget/ActionBarView*" />
         <revise action="REPLACE" target="framework.jar.out/smali/android/view/VolumePanel*" />
@@ -81,11 +80,6 @@
         -->
     </feature>
 
-    <feature require="OPTION" description="Missed methods and fields" >
-        <!-- Quick boot feature -->
-    	<revise action="REPLACE" target="services.jar.out/smali/com/android/server/am/QuickbootActivityManagerServiceHook*" />
-    </feature>
-
     <feature require="OPTION" description="Add channel provider and push" >
         <!-- Already merged in Feature "Baidu Multi Theme"
         <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityThread.smali" />
@@ -102,6 +96,10 @@
 
     <feature require="OPTION" description="Add back pad listener" >
         <revise action="MERGE" target="framework.jar.out/smali/android/app/Activity.smali" />
+    </feature>
+
+    <feature require="OPTION" description="Don't show popup when ringing" >
+        <revise action="MERGE" target="framework.jar.out/smali/android/view/WindowManagerGlobal.smali" />
     </feature>
 
 </features>

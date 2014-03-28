@@ -47,6 +47,11 @@
         <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/telephony/IPhoneSubInfo$Stub$Proxy.smali" />
     </feature>
 
+    <feature require="OPTION" description="Missed methods and fields" >
+        <!-- Quick boot feature -->
+        <revise action="REPLACE" target="services.jar.out/smali/com/android/server/am/QuickbootActivityManagerServiceHook*" />
+    </feature>
+
     <feature require="MUST" description="set memory persistent for baidu launcher" >
         <!-- Already merged.
         <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityManager.smali" />

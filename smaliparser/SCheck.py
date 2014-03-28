@@ -11,6 +11,15 @@ import SmaliMethod
 import sys
 import SmaliParser
 import os
+import getopt
+
+class Options(object): pass
+OPTIONS = Options()
+OPTIONS.autoComplete = False
+
+OPTIONS.formatSmali = False
+OPTIONS.libraryPath = None
+OPTIONS.filterOutDir = []
 
 MAX_CHECK_INVOKE_DEEP = 50
 class SCheck(object):
@@ -188,25 +197,18 @@ def getCanReplaceMethods(targetLib, sourceLib, clsName, methodEntryList):
 
     return list(set(outEntryList))
 
-def autoComplete(argv):
-    vendorDir = argv[2]
-    aospDir = argv[3]
-    bospDir = argv[4]
-    mergedDir = argv[5]
-    outdir = argv[6]
-    
+def autoComplete(vendorDir, aospDir, bospDir, mergedDir, outdir, comModuleList):
     sCheck = SCheck(vendorDir, aospDir, bospDir, mergedDir)
     
-    idx = 7
-    while idx < len(argv):
-        needComleteDir = '%s/%s' %(mergedDir, argv[idx])
+    for module in comModuleList:
+        needComleteDir = '%s/%s' %(mergedDir, module)
         sDict = SmaliParser.getSmaliDict(needComleteDir)
         for clsName in sDict.keys():
             mSmali = sCheck.mMSLib.getSmali(clsName)
             assert mSmali is not None, "Error: can not get class: %s" %clsName
             canReplaceEntryList = sCheck.autoComplete(mSmali)
             for entry in canReplaceEntryList:
-                outStr = entry.toString()
+                outStr = "%s\n" %entry.toString()
                 assert outStr is not None, "Error: Life is hard...."
                 
                 cls = entry.getClassName()
@@ -236,19 +238,65 @@ def autoComplete(argv):
                 
                 outFile.write(outStr)
                 outFile.close()
-        idx = idx + 1
+
+def formatSmali(smaliLib, smaliFileList = None):
+
+    print ">>> begin format smali files, please wait...."
+    if smaliFileList is not None:
+        idx = 0
+        while idx < len(smaliFileList):
+            clsName = SmaliParser.getClassFromPath(smaliFileList[idx])
+            cSmali = smaliLib.getSmali(clsName)
+            smaliLib.format(cSmali)
+            idx = idx + 1
+    else:
+        for clsName in smaliLib.mSDict.keys():
+            cSmali = smaliLib.getSmali(clsName)
+            smaliLib.format(cSmali)
+    print ">>> format done"
 
 def usage():
     pass
 
+def main(argv):
+    options,args = getopt.getopt(argv[1:], "hafl:s:t:", [ "help", "autocomplete", "formatsmali", "library", "smali", "filter"])
+    for name,value in options:
+        if name in ("-h", "--help"):
+            usage()
+        elif name in ("-a", "--autocomplete"):
+            OPTIONS.autoComplete = True
+        elif name in ("-f", "--formatsmali"):
+            OPTIONS.formatSmali = True
+        elif name in ("-l", "--library"):
+            OPTIONS.libraryPath = value
+        elif name in ("-t", "--filter"):
+            OPTIONS.filterOutDir.append(os.path.abspath(value))
+        else:
+            print "Wrong parameters, see the usage...."
+            usage()
+            exit(1)
+
+    if OPTIONS.autoComplete:
+        if len(args) >= 6:
+            autoComplete(args[0], args[1], args[2], args[3], args[4], args[5:])
+        else:
+            usage()
+            exit(1)
+    elif OPTIONS.formatSmali:
+        if OPTIONS.libraryPath is None:
+            if len(args) > 0:
+                OPTIONS.libraryPath = args[0]
+                args = args[1:]
+            else:
+                usage()
+                exit(1)
+        if len(args) > 0:
+            formatSmali(OPTIONS.libraryPath, args, OPTIONS.filterOutDir)
+        else:
+            formatSmali(OPTIONS.libraryPath, None, OPTIONS.filterOutDir)
 
 if __name__ == "__main__":
-    if sys.argv[1] == "--autocomplete" and len(sys.argv) > 7:
-        autoComplete(sys.argv)
-        pass
+    if len(sys.argv) > 2:
+        main(sys.argv)
     else:
         usage()
-    
-    
-    
-    

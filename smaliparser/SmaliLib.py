@@ -16,15 +16,16 @@ class SmaliLib(object):
     classdocs
     '''
 
-    def __init__(self, libPath):
+    def __init__(self, libPath, filterOutDirList = None):
         '''
         Constructor
         '''
-        self.mSDict = SmaliParser.getSmaliDict(libPath)
+        self.mSDict = SmaliParser.getSmaliDict(libPath, filterOutDirList)
         self.mCalledMethods = None
         self.mSmaliRoot = None
         self.mAlreadyParsedInvoke = False
         self.mPath = libPath
+        self.mFieldFormatMap = {}
     
     def getPath(self):
         return self.mPath
@@ -62,7 +63,7 @@ class SmaliLib(object):
             methodsList.extend(superSmali.getEntryList(SmaliEntry.METHOD, filterInList, filterOutList))
         
         return methodsList
-    
+
     def getAllMethods(self, smali):
         superFilterOutList = [Smali.KEY_PRIVATE]
         if not smali.isInterface() and not smali.isAbstractClass():
@@ -71,7 +72,7 @@ class SmaliLib(object):
         methodsList.extend(smali.getEntryList(SmaliEntry.METHOD))
         
         return methodsList
-    
+
     def getAllFields(self, smali):
         fieldsList = smali.getEntryList(SmaliEntry.FIELD)
         for clsName in self.getAllFathers(smali):
@@ -127,8 +128,8 @@ class SmaliLib(object):
         for clsName in smali.getSuperAndImplementsClassName():
             cSmali = self.getSmali(clsName)
             if cSmali is not None:
-                allFathersList.extend(self.getAllFathers(cSmali))
                 allFathersList.append(clsName)
+                allFathersList.extend(self.getAllFathers(cSmali))
         return list(set(allFathersList))
         
     def getAbstractMethodsNameList(self, smali):
@@ -241,7 +242,23 @@ class SmaliLib(object):
                     break
 
         return usedMethodsList
-    
+
+    def getBelongClass(self, smali, type, name):
+        if type != SmaliEntry.FIELD:
+            print "Error: not support getBelongClass for type: %s" %type
+            return None
+
+        if smali.hasEntry(type, name):
+            return smali.getClassName()
+
+        allClsName = self.getAllFathers(smali)
+        for clsName in allClsName:
+            cSmali = self.getSmali(clsName)
+            assert cSmali is not None, "Error: can not get class from: %s" %(self.getPath())
+            if cSmali.hasEntry(type, name):
+                return cSmali.getClassName()
+        return None
+
     def checkMethods(self, smali):
 #        if smali.isAbstractClass() or smali.isInterface():
 #            return
@@ -264,8 +281,27 @@ class SmaliLib(object):
                     break;
             if hasMethod is False:
                 print "Error: %s doesn't has method %s, was called by: %s" %(smali.getClassName(), method, string.join(allCalledMethods[key]))
-                
-                
+
+    def format(self, smali):
+        if smali is None:
+            return
+
+        usedOutsideFields = smali.getUsedOutsideFields()
+
+        if usedOutsideFields is not None and len(usedOutsideFields) > 0:
+            for usedFieldsItem in usedOutsideFields:
+                key = r'%s->%s' %(usedFieldsItem.cls, usedFieldsItem.field)
+                uSmali = self.getSmali(usedFieldsItem.cls)
+                if uSmali is not None and not self.mFieldFormatMap.has_key(key):
+                    belongCls = self.getBelongClass(uSmali, SmaliEntry.FIELD, usedFieldsItem.field)
+                    if belongCls is not None and belongCls != uSmali.getClassName():
+                        targetKey = r'%s->%s' %(belongCls, usedFieldsItem.field)
+                        if DEBUG:
+                            print "change %s to %s" %(key, targetKey)
+                        self.mFieldFormatMap[key] = targetKey
+            if smali.format(self.mFieldFormatMap):
+                smali.out()
+
 def __getSplitItem__(string, sep, idx = 0):
     splitArray = string.split(sep)
     assert len(splitArray) > idx, "Life is hard...."

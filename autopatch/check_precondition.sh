@@ -44,6 +44,7 @@ function deodex_baidu_zip()
 	# baidu_zip not exist, report error
 	[ ! -e ${baidu_zip} ] && echo " ERROR: ${baidu_zip} not exists." && return 0;
 
+	echo " deodex ${baidu_zip}, time-costly, have a drink ...";
 	${DEODEX} ${baidu_zip} ${DEODEX_THREAD_NUM} > /dev/null;
 	[ ! -e ${deodex_zip} ] && echo " ERROR: deodex ${baidu_zip} failed!" && return 0;
 
@@ -255,12 +256,10 @@ prepare_baidu_zip;
 # Prepare Optional
 if [ ${UPGRADE} ]; then
 	prepare_upgrade;
-
 else
 	prepare_changelist;
 	prepare_xosp;
-
 fi
 
-exit 0
+exit 0;
 
