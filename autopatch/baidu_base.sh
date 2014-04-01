@@ -51,7 +51,7 @@ function deodex_baidu_zip()
 #
 # Decode apk contained in DECODE_APKS to smali
 #
-DECODE_APKS=(Phone)
+DECODE_APKS=()
 function decode_apk()
 {
 	local src_dir=$1
@@ -100,10 +100,14 @@ function decode_baidu_source()
 
 	echo ">>> unzip ${deodex_zip} ...";
 	[ -z ${BAIDU_BASE} ] && BAIDU_BASE=${PORT_ROOT}/reference/baidu_base
+	[ -e ${BAIDU_BASE} ] && rm -rf ${BAIDU_BASE}/*
 	[ ! -e ${BAIDU_BASE} ] && mkdir ${BAIDU_BASE} -p
 	unzip -q -o ${deodex_zip} -d ${BAIDU_BASE};
 
 	[ -d ${BAIDU_BASE}/SYSTEM/ ] && mv ${BAIDU_BASE}/SYSTEM/ ${BAIDU_BASE}/system/;
+
+	[ -e ${out} ] && rm -rf ${out}/*
+	[ ! -e ${out} ] && mkdir -p ${out}
 
 	decode_jar ${BAIDU_BASE}/system/framework $out;
 	decode_apk ${BAIDU_BASE}/system/app $out;

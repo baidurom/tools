@@ -65,8 +65,10 @@ class Format():
 
         if self.mAction & Format.RESID_TO_NAME:
             Format.log("  RESID_TO_NAME")
-            idtoname(self.mPublicXML, self.mSmaliFile).idtoname()
-            pass
+            if os.path.exists(self.mPublicXML):
+                idtoname(self.mPublicXML, self.mSmaliFile).idtoname()
+            else:
+                Format.log("  No such file or directory: %s" % self.mPublicXML)
 
         if self.mAction & Format.UNIFY_INVOKE:
             Format.log("  UNIFY_INVOKE")
@@ -82,7 +84,10 @@ class Format():
         # RESID_TO_NAME ->  ACCESS_TO_NAME -> REMOVE_LINE 
         if self.mAction & Format.RESID_TO_NAME:
             Format.log("  RESID_TO_NAME")
-            nametoid(self.mPublicXML, self.mSmaliFile).nametoid()
+            if os.path.exists(self.mPublicXML):
+                nametoid(self.mPublicXML, self.mSmaliFile).nametoid()
+            else:
+                Format.log("  No such file or directory: %s" % self.mPublicXML)
 
         if self.mAction & Format.ACCESS_TO_NAME:
             Format.log("  ACCESS_TO_NAME")

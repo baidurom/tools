@@ -12,8 +12,6 @@ __author__ = 'duanqz@gmail.com'
 
 import os.path
 
-import sys
-
 
 class Config:
     """ Configuration.
@@ -29,9 +27,6 @@ class Config:
 ### Root directory   
     # Root directory of current project
     PRJ_ROOT = os.curdir
-
-    # Root directory plug-in, like diff-patch.sh
-    PLUG_ROOT = sys.path[0]
 
     # Root directory of reject files
     REJ_ROOT = os.path.join(PRJ_ROOT, "out/reject/")
@@ -96,11 +91,19 @@ class Config:
             Config.REVISE_OPTION = False
 
     @staticmethod
+    def createReject(target):
+        relTarget = os.path.relpath(target, Config.PRJ_ROOT)
+        rejFilename = os.path.join(Config.REJ_ROOT, relTarget + ".reject")
+        dirname = os.path.dirname(rejFilename)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+
+        return rejFilename
+
+    @staticmethod
     def toString():
         Log.d("-----------------------------------------------------------")
         Log.d("PRJ_ROOT:\t" + Config.PRJ_ROOT)
-        Log.d("PLUG_ROOT:\t" + Config.PLUG_ROOT)
-        Log.d("---")
         Log.d("OLDER_DIR:\t" + Config.OLDER_DIR)
         Log.d("NEWER_DIR:\t" + Config.NEWER_DIR)
         Log.d("---")
@@ -112,7 +115,9 @@ class Config:
 
 class Log:
 
-    BUFF = []
+    FAILED_LIST = []
+
+    REJECT_LIST = []
 
     @staticmethod
     def d(message):
@@ -124,20 +129,60 @@ class Log:
 
     @staticmethod
     def w(message):
-        Log.record(message)
-        print " Waring: ",
-        print message
+        print " Waring: ", message
 
     @staticmethod
     def e(message):
-        Log.record(message)
-        print " Error: ",
-        print message
+        print " Error: ", message
 
     @staticmethod
-    def record(message):
-        Log.BUFF.append(message)
+    def fail(message):
+        Log.FAILED_LIST.append(message)
 
+    @staticmethod
+    def reject(target):
+        Log.REJECT_LIST.append(target)
+
+    @staticmethod
+    def conclude():
+        Log.i("\n")
+
+        Log.i("  +--------------- Auto Patch Results ")
+
+        if len(Log.FAILED_LIST) > 0:
+            Log.i("  |                                                                  ")
+            Log.i("  |  >> Failed to auto patch the following files, please check out:  ")
+            Log.i("  |                                                                  ")
+            for failed in Log.FAILED_LIST: Log.i("  |     " + failed)
+
+        if len(Log.REJECT_LIST) > 0:
+            Log.i("  |                                                                  ")
+            Log.i("  |  >> -_-!!!  Conflicts happen in the following files:             ")
+            Log.i("  |                                                                  ")
+            for reject in Log.REJECT_LIST: Log.i("  |     " + reject)
+            Log.i("  |                                                                  ")
+            Log.i("  |                                                                  ")
+            Log.i("  |     Advice:                                                      ")
+            Log.i("  |      1. Conflicts are marked out in `out/reject/`, you'd better  ")
+            Log.i("  |         resolve them before going on with the following work.    ")
+            Log.i("  |                                                                  ")
+            Log.i("  |      2. To resolve conflict, use tools to compare AOSP and BOSP, ")
+            Log.i("  |         also VENDOR and BOSP. Beyond-Compare is recommended.     ")
+            Log.i("  |                                                                  ")
+        else:
+            Log.i("  |                                                                  ")
+            Log.i("  |  >> ^_^.   No conflicts. Congratulations!                        ")
+            Log.i("  |                                                                  ")
+            Log.i("  |     Advice:                                                      ")
+            Log.i("  |      1. Although no conflict, mistakes still come out sometimes, ")
+            Log.i("  |         it depends on your device, VENDOR may change AOSP a lot. ")
+            Log.i("  |                                                                  ")
+            Log.i("  |      2. You could go on to `make` out a ROM, flash it into       ")
+            Log.i("  |         your device, and then fix bugs depends on real-time logs.")
+            Log.i("  |                                                                  ")
+
+        Log.i("  +---------------")
+        Log.i("\n")
 
 if __name__ == "__main__":
     Config.toString()

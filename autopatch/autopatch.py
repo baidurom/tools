@@ -22,7 +22,6 @@ from diff_patch import DiffPatch
 from xml_patch import Patcher as XMLPatcher
 from target_finder import TargetFinder
 from config import Config, Log
-from rejector import Rejector
 
 try:
     import xml.etree.cElementTree as ET
@@ -38,8 +37,8 @@ class AutoPatch:
         # Parse out the PATCH_XML
         AutoPatchXML().parse()
 
-        # Check reject whether exists
-        Rejector().check()
+        Log.conclude()
+
 # End of class AutoPatch
 
 
@@ -110,7 +109,7 @@ class ReviseExecutor:
             elif self.action == ReviseExecutor.REPLACE: self.replace()
             elif self.action == ReviseExecutor.MERGE:   self.merge()
         except:
-            Log.w("Failed to " + self.action + "  " + self.mTarget)
+            Log.fail("Failed to " + self.action + "  " + self.mTarget)
             traceback.print_exc()
 
     def add(self):
@@ -122,7 +121,7 @@ class ReviseExecutor:
         """
 
         if not os.path.exists(source):
-            Log.w("File not exist. " + source) 
+            Log.fail("File not exist. " + source)
             return
 
         if os.path.exists(target):
@@ -159,25 +158,25 @@ class ReviseExecutor:
 
     def merge(self): 
         if not os.path.exists(self.mTarget):
-            Log.w("File not exist " + self.mTarget)
+            Log.fail("File not exist " + self.mTarget)
             return
 
         Log.i(" MERGE    " + self.mTarget)
 
         if self.mPatch == None:
             # Compare OLDER and NEWER, then patch onto target.
-            if not DiffPatch(self.mTarget,self.mOldSrc, self.mNewSrc).run():
+            if not DiffPatch(self.mTarget, self.mOldSrc, self.mNewSrc).run():
                 # Collect the reject file of target
-                Rejector.collect(self.mTarget)
+                Log.reject(self.mTarget)
                 pass
 
         elif os.path.exists(self.mPatch):
             # Directly patch onto target by patch defined
             if not XMLPatcher(self.mTarget, self.mPatch).run():
-                Rejector.REJ_LIST.append(self.mTarget)
+                Log.reject(self.mTarget)
                 pass
         else:
-            Log.w("Patch not exists " + self.mPatch)
+            Log.fail("Patch not exists " + self.mPatch)
 
 # End of class ReviseExecutor
 
