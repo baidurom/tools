@@ -55,12 +55,12 @@ class DiffPatch():
 
         self.prepare()
 
-        noConflict = True
-
         # Split the target, older and newer
         targetSplitter = Splitter().split(self.mTarget, DiffPatch.TARGET_OUT)
         olderSplitter  = Splitter().split(self.mOlder,  DiffPatch.OLDER_OUT)
         newerSplitter  = Splitter().split(self.mNewer,  DiffPatch.NEWER_OUT)
+
+        reject = ""
 
         # Patch partitions one by one
         for newerPart in newerSplitter.getAllParts():
@@ -78,15 +78,16 @@ class DiffPatch():
                 continue
 
 
-            noConflict &= DiffPatch.__shellDiff3(targetPart, olderPart, newerPart)
+            rejectPart = DiffPatch.__shellDiff3(targetPart, olderPart, newerPart)
+            if rejectPart != None:
+                reject += rejectPart
 
         # Join the partitions
         targetSplitter.join()
 
         self.clean()
 
-        if not noConflict: Log.d("  [Conflict happened]")
-        return noConflict
+        return self.checkConflict(reject)
 
     @staticmethod
     def __shellDiff3(target, older, newer):
@@ -94,19 +95,24 @@ class DiffPatch():
             Return True if no conflict, otherwise return False
         """
 
-
         # Exit status is 0 if successful, 1 if conflicts, 2 if trouble
         cmd = "diff3 -E -m -L VENDOR %s -L AOSP %s -L BOSP %s" % \
                 (commands.mkarg(target), commands.mkarg(older), commands.mkarg(newer))
         (status, output) = commands.getstatusoutput(cmd)
 
-        if status != 2:
+        # Append "\n" to output for shell invoking result will miss it
+        output += "\n"
+
+        noConflict = (status == 0)
+        if noConflict:
             # Write back the patched file
             targetFile = open(target, "wb")
-            targetFile.write("%s\n" % output)
+            targetFile.write(output)
             targetFile.close()
-
-        return status == 0
+            return None
+        else:
+            # Write the conflict to reject file
+            return output
 
     def prepare(self):
         for tmpDir in (DiffPatch.TARGET_OUT, DiffPatch.OLDER_OUT, DiffPatch.NEWER_OUT):
@@ -122,6 +128,57 @@ class DiffPatch():
 
         for tmpDir in (DiffPatch.TARGET_OUT, DiffPatch.OLDER_OUT, DiffPatch.NEWER_OUT):
             shutil.rmtree(tmpDir)
+
+    def checkConflict(self, reject):
+        """ Check whether conflict happen or not
+            Return True if no conflict, otherwise, return False
+        """
+
+        if len(reject) == 0:
+            return True
+
+        CONFILCT_START = "<<<<<<<"
+        CONFLICT_MID   = "======="
+        CONFILCT_END   = ">>>>>>>"
+
+        top = 0
+        size = 0
+        conflictCnt = 0
+
+        lineNum = 0
+        lines = reject.splitlines()
+        for line in lines:
+            size = conflictCnt
+            if line.startswith(CONFILCT_START):
+                top += 1
+
+                # Modify the conflict in the original
+                lines[lineNum] = line.rstrip() + "  #Conflict " + str(size)
+                conflictCnt += 1
+
+            elif line.startswith(CONFILCT_END):
+                # Modify the conflict in the original
+                lines[lineNum] = line.rstrip() + "  #Conflict " + str(size-top)
+
+                if top == 0: break;
+                top -= 1
+
+            else:
+                if top > 0:
+                    if line.startswith(CONFLICT_MID):
+                        # Modify the conflict in the original
+                        lines[lineNum] = line.rstrip() + "  #Conflict " + str(size-top)
+
+            lines[lineNum] += "\n"
+            lineNum += 1
+
+        Log.d("  [Conflict happened. Total %d ]" %conflictCnt)
+        rejFilename = Config.createReject(self.mTarget)
+        rejFile = open(rejFilename, "wb")
+        rejFile.writelines(lines)
+        rejFile.close()
+
+        return False
 
 class Splitter:
     """ Splitter of smali file
@@ -156,7 +213,7 @@ class Splitter:
         try:
             self.mPartList.index(part)
         except:
-            Log.d("  [Add new part] " + part)
+            Log.d("  [Add new part %s ] " % part)
             self.mPartList.append(part)
 
     def join(self):

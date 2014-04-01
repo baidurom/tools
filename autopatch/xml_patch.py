@@ -220,10 +220,7 @@ class Patcher:
         """
 
         # Open the the reject file with append mode
-        relTarget = os.path.relpath(self.mTargetPath, Config.PRJ_ROOT)
-        rejFilename = os.path.join(Config.REJ_ROOT, relTarget + ".reject")
-        dirname = os.path.dirname(rejFilename)
-        if not os.path.exists(dirname): os.makedirs(dirname)
+        rejFilename = Config.createReject(self.mTargetPath)
         rejFileHandle = open(rejFilename, "a")
 
         # Write the reject content
@@ -242,7 +239,7 @@ class Patcher:
         buf += "\n# [ ANCHOR  ] : " + anchor
 
         if matchType != None and matchType == "REGEX":
-            buf += "\n# [ATTENTION] : SHOULD USE REGEX TO MATCH THE ANCHOR IN " + os.path.basename(relTarget)
+            buf += "\n# [ATTENTION] : SHOULD USE REGEX TO MATCH THE ANCHOR IN " + os.path.basename(self.mTargetPath)
 
         buf += "\n# [ ACTION  ] : " + action
         if position != None:
