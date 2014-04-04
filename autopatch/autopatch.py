@@ -21,7 +21,8 @@ import traceback
 from diff_patch import DiffPatch
 from xml_patch import Patcher as XMLPatcher
 from target_finder import TargetFinder
-from config import Config, Log
+from config import Config
+from log import Log
 
 try:
     import xml.etree.cElementTree as ET

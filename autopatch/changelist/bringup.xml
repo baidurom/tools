@@ -53,9 +53,7 @@
     </feature>
 
     <feature require="MUST" description="set memory persistent for baidu launcher" >
-        <!-- Already merged.
         <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityManager.smali" />
-        -->
         <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityManagerNative.smali" />
         <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityManagerProxy.smali" />
         <revise action="MERGE" target="framework.jar.out/smali/android/app/IActivityManager.smali" />

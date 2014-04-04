@@ -14,7 +14,8 @@ import shutil
 import fnmatch
 
 from os import sys, path
-from config import Config, Log
+from config import Config
+from log import Log
 
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from smaliparser.Smali import Smali
@@ -34,7 +35,6 @@ class DiffPatch():
         self.mTarget = target
         self.mOlder  = older
         self.mNewer  = newer
-        pass
 
     def run(self):
         if not os.path.exists(self.mTarget) or \
@@ -44,7 +44,8 @@ class DiffPatch():
 
         # Do NOT split XML
         if fnmatch.fnmatch(self.mTarget, "*.xml"):
-            return DiffPatch.__shellDiff3(self.mTarget, self.mOlder, self.mNewer)
+            DiffPatch.__shellDiff3(self.mTarget, self.mOlder, self.mNewer)
+            return self.checkConflict()
 
         return self.diff3()
 
@@ -60,8 +61,6 @@ class DiffPatch():
         olderSplitter  = Splitter().split(self.mOlder,  DiffPatch.OLDER_OUT)
         newerSplitter  = Splitter().split(self.mNewer,  DiffPatch.NEWER_OUT)
 
-        reject = ""
-
         # Patch partitions one by one
         for newerPart in newerSplitter.getAllParts():
             targetPart = targetSplitter.match(newerPart)
@@ -76,23 +75,22 @@ class DiffPatch():
                     pass
 
                 continue
+            elif not os.path.exists(targetPart):
+                # Target might be removed by vendor
+                continue
 
-
-            rejectPart = DiffPatch.__shellDiff3(targetPart, olderPart, newerPart)
-            if rejectPart != None:
-                reject += rejectPart
+            DiffPatch.__shellDiff3(targetPart, olderPart, newerPart)
 
         # Join the partitions
         targetSplitter.join()
 
         self.clean()
 
-        return self.checkConflict(reject)
+        return self.checkConflict()
 
     @staticmethod
     def __shellDiff3(target, older, newer):
         """ Using shell diff3.
-            Return True if no conflict, otherwise return False
         """
 
         # Exit status is 0 if successful, 1 if conflicts, 2 if trouble
@@ -102,17 +100,14 @@ class DiffPatch():
 
         # Append "\n" to output for shell invoking result will miss it
         output += "\n"
-
-        noConflict = (status == 0)
-        if noConflict:
+ 
+        if status != 2:
             # Write back the patched file
             targetFile = open(target, "wb")
             targetFile.write(output)
             targetFile.close()
-            return None
-        else:
-            # Write the conflict to reject file
-            return output
+
+        return status == 0
 
     def prepare(self):
         for tmpDir in (DiffPatch.TARGET_OUT, DiffPatch.OLDER_OUT, DiffPatch.NEWER_OUT):
@@ -129,13 +124,10 @@ class DiffPatch():
         for tmpDir in (DiffPatch.TARGET_OUT, DiffPatch.OLDER_OUT, DiffPatch.NEWER_OUT):
             shutil.rmtree(tmpDir)
 
-    def checkConflict(self, reject):
-        """ Check whether conflict happen or not
-            Return True if no conflict, otherwise, return False
+    def checkConflict(self):
+        """ Check whether conflict happen or not in output
+            Return True if no conflict happen. otherwise return False
         """
-
-        if len(reject) == 0:
-            return True
 
         CONFILCT_START = "<<<<<<<"
         CONFLICT_MID   = "======="
@@ -144,41 +136,77 @@ class DiffPatch():
         top = 0
         size = 0
         conflictCnt = 0
+        delLineNumbers = []
+
+        needToDel = False
+
+        targetFile = open(self.mTarget, "r+")
 
         lineNum = 0
-        lines = reject.splitlines()
+        lines = targetFile.readlines()
+
         for line in lines:
             size = conflictCnt
             if line.startswith(CONFILCT_START):
+
                 top += 1
 
                 # Modify the conflict in the original
-                lines[lineNum] = line.rstrip() + "  #Conflict " + str(size)
+                lines[lineNum] = "%s #Conflict %d\n" % (line.rstrip(),size)
                 conflictCnt += 1
 
+                #conflicts.append("#Conflict %d , start at line %d\n" % (size, lineNum))
+                #conflicts[size] += line
+
+                delLineNumbers.append(lineNum)
+
             elif line.startswith(CONFILCT_END):
+
                 # Modify the conflict in the original
-                lines[lineNum] = line.rstrip() + "  #Conflict " + str(size-top)
+                lines[lineNum] = "%s #Conflict %d\n" % (line.rstrip(), size-top)
+
+                #conflicts[size-top] += line
+                #conflicts[size-top] += "#Conflict %d , end at line %d\n\n" % (size-top, lineNum)
+
+                delLineNumbers.append(lineNum)
+                needToDel = False
 
                 if top == 0: break;
                 top -= 1
 
             else:
                 if top > 0:
+                    #conflicts[size-top] += line
+
                     if line.startswith(CONFLICT_MID):
                         # Modify the conflict in the original
-                        lines[lineNum] = line.rstrip() + "  #Conflict " + str(size-top)
+                        lines[lineNum] = "%s #Conflict %d\n" % (line.rstrip(), size-top)
+                        needToDel = True
 
-            lines[lineNum] += "\n"
+                    if needToDel:
+                        delLineNumbers.append(lineNum)
+
             lineNum += 1
 
-        Log.d("  [Conflict happened. Total %d ]" %conflictCnt)
-        rejFilename = Config.createReject(self.mTarget)
-        rejFile = open(rejFilename, "wb")
-        rejFile.writelines(lines)
-        rejFile.close()
 
-        return False
+        # Create a reject file if conflict happen
+        if conflictCnt > 0:
+            Log.d("  [Conflict happened. Total %d ]" %conflictCnt)
+            rejFilename = Config.createReject(self.mTarget)
+            rejFile = open(rejFilename, "wb")
+            rejFile.writelines(lines)
+            rejFile.close()
+
+        # Write back target
+        for lineNum in delLineNumbers[::-1]:
+            del lines[lineNum]
+
+        targetFile.seek(0)
+        targetFile.truncate()
+        targetFile.writelines(lines)
+        targetFile.close()
+
+        return conflictCnt == 0
 
 class Splitter:
     """ Splitter of smali file
@@ -237,7 +265,7 @@ class Splitter:
 
 
 if __name__ == "__main__":
-    target = "/media/source/smali/smali-4.2/devices/p6/framework.jar.out/smali/android/content/res/AssetManager.smali"
-    older  = "/media/source/smali/smali-4.2/devices/p6/autopatch/aosp/framework.jar.out/smali/android/content/res/AssetManager.smali"
-    newer  = "/media/source/smali/smali-4.2/devices/p6/autopatch/bosp/framework.jar.out/smali/android/content/res/AssetManager.smali"
+    target = "/media/source/smali/smali-4.2/devices/p6/framework-res/AndroidManifest.xml"
+    older  = "/media/source/smali/smali-4.2/devices/p6/autopatch/aosp/framework-res/AndroidManifest.xml"
+    newer  = "/media/source/smali/smali-4.2/devices/p6/autopatch/bosp/framework-res/AndroidManifest.xml"
     DiffPatch(target, older, newer).run()

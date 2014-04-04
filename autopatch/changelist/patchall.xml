@@ -8,6 +8,10 @@
     <feature require="OPTION" description="Prehandle incoming short message for Baidu">
         <revise action="ADD"   target="telephony-common.jar.out/smali/com/android/internal/telephony/SMSDispatcher$TrafficMonitorMessageReceiverClass.smali" />
         <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/SMSDispatcher.smali" />
+
+        <!-- Optional. Prevent Junk SMS.
+        <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/WapPushOverSms.smali" />
+        -->
     </feature>
 
     <feature require="OPTION" description="Network firewall policy">
@@ -16,7 +20,7 @@
     </feature>
 
     <feature require="OPTION" description="Hook to reorder SMS broadcast">
-        <!-- Already merged in bringup
+        <!-- Already merged in bringup 
         <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityManagerService.smali" />
         -->
         <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/BroadcastRecord.smali" />
@@ -46,17 +50,31 @@
     </feature>
 
     <feature require="OPTION" description="Baidu TextView" >
-        <revise target="framework.jar.out/smali/android/widget/Editor*" action="REPLACE" />
-        <revise target="framework.jar.out/smali/android/widget/TextView.smali" action="REPLACE" />
-        <revise target="framework.jar.out/smali/android/widget/TextView$ChangeWatcher.smali" action="REPLACE" />
-        <revise target="framework.jar.out/smali/android/text/Layout.smali" action="REPLACE" />
-        <revise target="framework.jar.out/smali/com/android/internal/util/SearchHelper.smali" action="ADD" />
-        <revise target="framework.jar.out/smali/com/android/internal/util/WordSegment.smali" action="ADD" />
-        <revise target="framework.jar.out/smali/com/android/internal/widget/PopupLayout.smali" action="ADD" />
-        <revise target="framework.jar.out/smali/com/android/internal/widget/MagnifierView.smali" action="ADD" />
-        <revise target="framework.jar.out/smali/android/widget/MagnifierView2.smali" action="ADD" />
-        <revise target="framework.jar.out/smali/android/widget/MagnifierController.smali" action="ADD" />
-        <revise target="framework.jar.out/smali/android/widget/MagnifierController$1.smali" action="ADD" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/widget/Editor*" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/widget/TextView.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/widget/TextView$ChangeWatcher.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/text/Layout.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/widget/MagnifierController*" />
+        <revise action="ADD" target="framework.jar.out/smali/com/android/internal/util/SearchHelper.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/com/android/internal/util/WordSegment.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/com/android/internal/widget/PopupLayout.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/com/android/internal/widget/MagnifierView.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/widget/MagnifierView2.smali" />
+
+        <!-- The following changes are for webkit. It is optional.
+        <revise action="ADD" target="framework.jar.out/smali/android/webkit/PopupWindowView.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/com/android/internal/widget/MagnifierView.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/webkit/MagnifierView_Rect.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/webkit/MagnifierView.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/webkit/MagnifierSelectionPopupWindowView.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/webkit/MagnifierSelectionPopupWindowView_Rect.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/webkit/WebSettings.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/webkit/WebTextView.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/webkit/WebViewClassic.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/webkit/WebViewCore.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/webkit/WebView.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/webkit/WebViewInputDispatcher.smali" />
+         -->
     </feature>
 
     <feature require="OPTION" description="Baidu Multi Theme" >
@@ -81,16 +99,12 @@
     </feature>
 
     <feature require="OPTION" description="Add channel provider and push" >
-        <!-- Already merged in Feature "Baidu Multi Theme"
         <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityThread.smali" />
         <revise action="MERGE" target="framework.jar.out/smali/android/content/res/AssetManager.smali" />
-        -->
     </feature>
 
     <feature require="OPTION" description="Use flags to indicator results" >
-        <!-- Already merged in Feature "Baidu Multi Theme"
         <revise action="MERGE" target="framework.jar.out/smali/android/content/Intent.smali" />
-        -->
         <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityStack.smali" />
     </feature>
 
@@ -101,5 +115,50 @@
     <feature require="OPTION" description="Don't show popup when ringing" >
         <revise action="MERGE" target="framework.jar.out/smali/android/view/WindowManagerGlobal.smali" />
     </feature>
+
+    <!-- These features are optional
+    <feature require="OPTION" description="Optimize for retoring to factory" >
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/os/storage/ExternalStorageFormatter.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/os/storage/ExternalStorageFormatter$3.smali" />
+    </feature>
+
+    <feature require="OPTION" description="Optimize for 512M devices memory clean up" >
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ProcessList.smali" />
+    </feature>
+
+    <feature require="OPTION" description="Semiview popup when input window show" >
+        <revise action="MERGE" target="framework.jar.out/smali/android/inputmethodservice/InputMethodService.smali" />
+    </feature>
+
+    <feature require="OPTION" description="Quick Boot and PowerOff Alarm Feature">
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/AlarmManager.smali"/>
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/IAlarmManager.smali"/>
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/IAlarmManager$Stub.smali"/>
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/IAlarmManager$Stub$Proxy.smali"/>
+
+        <revise action="MERGE" target="framework.jar.out/smali/android/net/wifi/IWifiManager.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/net/wifi/IWifiManager$Stub.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/net/wifi/IWifiManager$Stub$Proxy.smali" />
+
+        <revise action="MERGE" target="framework.jar.out/smali/android/view/WindowManager.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/accessibility/AccessibilityManagerService.smali" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityManagerService.smali" />
+
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/wm/WindowManagerService.smali" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/NotificationManagerService.smali" />
+
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/AlarmManagerService.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/BatteryService.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/WifiService.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/net/NetworkStatsService.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/power/DisplayPowerController.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/power/PowerManagerService.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/power/ShutdownThread.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/usb/UsbDeviceManager.smali" />
+
+        <revise action="REPLACE" target="services.jar.out/smali/com/android/server/am/QuickbootActivityManagerServiceHook*" />
+        <revise action="REPLACE" target="services.jar.out/smali/com/android/server/power/QuickbootManager*" />
+    </feature>
+    -->
 
 </features>
