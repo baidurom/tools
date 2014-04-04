@@ -17,7 +17,8 @@ import os
 import sys
 import string
 from autopatch import AutoPatch
-from config import Config, Log
+from config import Config
+from log import Log
 
 
 def usage():

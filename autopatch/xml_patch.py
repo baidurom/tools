@@ -20,7 +20,8 @@ import sys
 import re
 import os
 
-from config import Config, Log
+from config import Config
+from log import Log
 
 try:
     import xml.etree.cElementTree as ET

@@ -11,6 +11,8 @@ PRJ_ROOT=`pwd`
 TOOL_DIR=$PORT_ROOT/tools
 TARGET_FILES_TEMPLATE_DIR=$TOOL_DIR/target_files_template
 OTA_FROM_TARGET_FILES=$TOOL_DIR/releasetools/ota_from_target_files
+SYSTEM_INFO_PROCESS=$TOOL_DIR/releasetools/systeminfoprocess.py
+RECOVERY_LINK=$TOOL_DIR/releasetools/recoverylink.py
 
 OUT_DIR=$PRJ_ROOT/out
 OEM_TARGET_DIR=$OUT_DIR/oem_target_files
@@ -27,9 +29,12 @@ function check_root_state {
 	echo ">>> check root state of phone ..."
 	wait_for_device_online
 	SECURE_PROP=$(adb shell cat /default.prop | grep -o "ro.secure=\w")
-	if [ x"$SECURE_PROP" = x"ro.secure=0" ];then
+	DEBUG_PROP=$(adb shell cat /default.prop | grep -o "ro.debuggable=\w")
+	if [ "$SECURE_PROP" = "ro.secure=0" -o "$DEBUG_PROP" = "ro.debuggable=1" ];then
 		ROOT_STATE="kernel_root"
 		echo ">>> system root state: kernel root"
+		adb root
+		wait_for_device_online
 	else
 		echo "exit" > exit_command
 		wait_for_device_online
@@ -84,19 +89,20 @@ function wait_for_device_online {
 
 # get device system files info
 function get_device_system_info {
-	adb push $TOOL_DIR/releasetools/getfilesysteminfo /data/local/tmp
-	adb shell chmod 0777 /data/local/tmp/getfilesysteminfo
+	echo ">>> get device system info ..."
+	adb push $TOOL_DIR/releasetools/getfilesysteminfo.sh /data/local/tmp
 
 	wait_for_device_online
 	if [ "$ROOT_STATE" = "system_root" ];then
 		adb push $TOOL_DIR/releasetools/getsysteminfocommand /data/local/tmp
 		echo "su < /data/local/tmp/getsysteminfocommand; exit" | adb shell
-		adb pull /data/local/tmp/system.info $META_DIR/
-		adb pull /data/local/tmp/link.info $META_DIR/
 	else
-		adb shell /data/local/tmp/getfilesysteminfo --info /system > $META_DIR/system.info
-		adb shell /data/local/tmp/getfilesysteminfo --link /system > $META_DIR/link.info
+		adb shell chmod 0777 /data/local/tmp/getfilesysteminfo.sh
+		adb shell /data/local/tmp/getfilesysteminfo.sh
 	fi
+	adb pull /data/local/tmp/file.info $META_DIR/
+	$SYSTEM_INFO_PROCESS $META_DIR/file.info $META_DIR/system.info $META_DIR/link.info
+	rm -f $META_DIR/file.info
 
 	if [ -f $META_DIR/system.info -a -f $META_DIR/link.info ];then
 		echo ">>> get device system files info done"
@@ -131,10 +137,8 @@ function build_filesystem_config {
 # recover the device files' symlink information
 function recover_symlink {
     echo ">>> Run recoverylink.py to recover symlink"
-    cat $META_DIR/link.info | sed -e '/\<su\>/d;/\<invoke-as\>/d' | sort > $SYSTEM_DIR/linkinfo.txt
-    python $TOOL_DIR/releasetools/recoverylink.py $OEM_TARGET_DIR
-	mv $SYSTEM_DIR/linkinfo.txt $META_DIR
-	rm $META_DIR/link.info
+    cat $META_DIR/link.info | sed -e '/\<su\>/d;/\<invoke-as\>/d' | sort > $META_DIR/linkinfo.txt
+    $RECOVERY_LINK $META_DIR/linkinfo.txt $OEM_TARGET_DIR
 	if [ ! -f $META_DIR/linkinfo.txt ];then
 		echo ">>> Failed to create linkinfo.txt"
 		exit 1
