@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#**************************************************#
+#This shell used to call SCheck to replace smali method
+#**************************************************#
+
+CUR_DIR=$(dirname $0)
+SCHECK=$CUR_DIR/smaliparser/SCheck
+
+$SCHECK --replacemethod $@

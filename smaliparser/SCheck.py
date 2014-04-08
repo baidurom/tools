@@ -12,6 +12,10 @@ import sys
 import SmaliParser
 import os
 import getopt
+import SAutoCom
+
+sys.path.append('%s/autopatch' %os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from log import Log
 
 class Options(object): pass
 OPTIONS = Options()
@@ -20,6 +24,8 @@ OPTIONS.autoComplete = False
 OPTIONS.formatSmali = False
 OPTIONS.libraryPath = None
 OPTIONS.filterOutDir = []
+
+OPTIONS.replaceMethod = False
 
 MAX_CHECK_INVOKE_DEEP = 50
 class SCheck(object):
@@ -39,17 +45,24 @@ class SCheck(object):
     
     def autoComplete(self, smali):
         unImplementMethods = self.getUnImplementMethods(smali)
-        canReplaceMethods = []
+        canReplaceEntryList = []
+        canNotReplaceEntryList = []
         if unImplementMethods is not None and len(unImplementMethods) > 0:
             vSmali = self.mVSLib.getSmali(smali.getClassName())
-            assert vSmali is not None, "Error: Can't get smali %s from vendor: %s"  %(smali.getClassName(), string.join(unImplementMethods))
+            if vSmali is None:
+                Log.e("Can't get smali %s from vendor: %s"  %(smali.getClassName(), string.join(unImplementMethods)))
+                return canReplaceEntryList
             
             unImplMethodEntryList = getEntryListByNameList(vSmali, SmaliEntry.METHOD, unImplementMethods)
-            canReplaceMethods = getCanReplaceMethods(self.mMSLib, self.mVSLib, smali.getClassName(), unImplMethodEntryList)
+            (canReplaceEntryList, canNotReplaceEntryList) = getCanReplaceMethods(self.mMSLib, self.mVSLib, smali.getClassName(), unImplMethodEntryList)
         
-            for method in canReplaceMethods:
-                print "Can Replace: class: %s, method: %s" %(method.getClassName(), method.getName())
-        return canReplaceMethods
+            for entry in canReplaceEntryList:
+                Log.d("   Can Replace: %s" %(entry.getSimpleString()))
+
+            for entry in canNotReplaceEntryList:
+                Log.d("   Can not Replace: %s" %(entry.getSimpleString()))
+
+        return (canReplaceEntryList, canNotReplaceEntryList)
         
     def getUnImplementMethods(self, smali):
         return getUnImplementMethods(self.mASLib, self.mMSLib, smali)
@@ -123,7 +136,7 @@ def getMissedMethods(sLib, invokeMethods):
                 hasMethod = True
                 break
         if not hasMethod:
-            print "Warning: class: %s doesn't have method: %s" % (invokeItem.cls, invokeItem.method)
+            Log.d("class: %s doesn't have method: %s" % (invokeItem.cls, invokeItem.method))
             missedMethods.append(invokeItem)
     return missedMethods
 
@@ -139,42 +152,52 @@ def getMissedFields(sLib, usedFields):
                 hasField = True
                 break
         if not hasField:
-            print "Warning: class: %s doesn't have field: %s" % (usedFieldItem.cls, usedFieldItem.field)
+            Log.d("class: %s doesn't have field: %s" % (usedFieldItem.cls, usedFieldItem.field))
             missedFields.append(usedFieldItem)
     return missedFields
 
 # targetLib is which you already merged 
 # sourceLib is which you want get the replace method
 def getCanReplaceMethods(targetLib, sourceLib, clsName, methodEntryList):
-    outEntryList = []
+    canReplaceEntryList = []
+    canNotReplaceEntryList = []
     for mEntry in methodEntryList:
         methodName = mEntry.getName()
-        print "Check if can replace method: %s in class: %s" %(methodName, clsName)
+        Log.d("Check if can replace method: %s in class: %s" %(methodName, clsName))
 
         if mEntry is None:
-            print ">>>> Warning: Baidu doesn't have this Method: %s" %clsName
+            Log.e("Baidu doesn't have this Method: %s" %clsName)
             continue
         
         try:
             missedFields = getMissedFields(targetLib, mEntry.getUsedFields())
-            hasGetField = False
+            canIgnore = True
             outMissedFieldsList = []
             for usedField in missedFields:
                 if not SmaliMethod.isPutUseField(usedField):
-                    hasGetField = True
+                    canIgnore = False
                     break
                 else:
                     cSmali = sourceLib.getSmali(usedField.cls)
-                    assert cSmali is not None,  "Error: doesn't have class: %s" % usedField.cls
+                    if cSmali is None:
+                        canIgnore = False
+                        break
+
                     fieldEntry = cSmali.getEntry(SmaliEntry.FIELD, usedField.field)
-                    assert fieldEntry is not None,  "Error: doesn't have field: %s in class: %s" % (usedField.field, usedField.cls)
+                    if fieldEntry is None:
+                        canIgnore = False
+                        break
+
                     outMissedFieldsList.append(fieldEntry)
-            if hasGetField:
-                print "Warning: can not replace method: %s in class: %s" %(methodName, clsName)
+            if canIgnore:
+                canReplaceEntryList.extend(outMissedFieldsList)
+            else:
+                canNotReplaceEntryList.append(mEntry)
                 continue
-            outEntryList.extend(outMissedFieldsList)
-        except:
-            print "Warning: can not replace method: %s in class: %s" %(methodName, clsName)
+        except Exception as e:
+            Log.d(e)
+            canNotReplaceEntryList.append(mEntry)
+            Log.d("can not replace method: %s in class: %s" %(methodName, clsName))
             continue
         
         try:
@@ -186,62 +209,26 @@ def getCanReplaceMethods(targetLib, sourceLib, clsName, methodEntryList):
                 missedMethodDict[invokeItem.cls].append(invokeItem.method)
             for cls in missedMethodDict.keys():
                 cSmali = sourceLib.getSmali(cls)
-                assert cSmali is not None, "Error: doesn't have class: %s" % cls
+                if cSmali is None:
+                    canNotReplaceEntryList.append(mEntry)
+                    break
+
                 entryList = getEntryListByNameList(cSmali, SmaliEntry.METHOD, missedMethodDict[cls])
-                outEntryList.extend(getCanReplaceMethods(targetLib, sourceLib, cls, entryList))
-            outEntryList.append(mEntry)
+                (cEntryList, nEntryList) = getCanReplaceMethods(targetLib, sourceLib, cls, entryList)
+                canReplaceEntryList.extend(cEntryList)
+                canNotReplaceEntryList.extend(nEntryList)
+            canReplaceEntryList.append(mEntry)
             missedMethodDict.clear()
-        except:
-            print "Warning: can not replace method: %s in class: %s" %(methodName, clsName)
+        except Exception as e:
+            Log.d(e)
+            canNotReplaceEntryList.append(mEntry)
+            Log.d("Warning: can not replace method: %s in class: %s" %(methodName, clsName))
             continue
 
-    return list(set(outEntryList))
-
-def autoComplete(vendorDir, aospDir, bospDir, mergedDir, outdir, comModuleList):
-    sCheck = SCheck(vendorDir, aospDir, bospDir, mergedDir)
-    
-    for module in comModuleList:
-        needComleteDir = '%s/%s' %(mergedDir, module)
-        sDict = SmaliParser.getSmaliDict(needComleteDir)
-        for clsName in sDict.keys():
-            mSmali = sCheck.mMSLib.getSmali(clsName)
-            assert mSmali is not None, "Error: can not get class: %s" %clsName
-            canReplaceEntryList = sCheck.autoComplete(mSmali)
-            for entry in canReplaceEntryList:
-                outStr = "%s\n" %entry.toString()
-                assert outStr is not None, "Error: Life is hard...."
-                
-                cls = entry.getClassName()
-                cSmali = sCheck.mVSLib.getSmali(cls)
-                assert cSmali is not None, "Error: can not get class %s from: %s" %(cls, sCheck.mVSLib.getPath())
-                jarName = cSmali.getJarName()
-                pkgName = cSmali.getPackageName()
-                
-                outFilePath = r'%s/%s/smali/%s/%s.smali.part' %(outdir, jarName, pkgName, cSmali.getClassBaseName())
-                
-                print ">>> begin auto compelete class:%s %s:%s to %s" %(cls, entry.getType(), entry.getName(), outFilePath)
-                
-                dirName = os.path.dirname(outFilePath)
-                if not os.path.isdir(dirName):
-                    os.makedirs(os.path.dirname(outFilePath))
-                
-                outFile = None
-                if os.path.isfile(outFilePath):
-                    oldSmali = Smali.Smali(outFilePath)
-                    if oldSmali.removeEntryByName(entry.getType(), entry.getName()):
-                        outFile = file(outFilePath, 'w+')
-                        oldSmali.addEntry(entry)
-                        outStr = oldSmali.toString()
-                
-                if outFile is None:
-                    outFile = file(outFilePath, 'a+')
-                
-                outFile.write(outStr)
-                outFile.close()
+    return list(set(canReplaceEntryList)), list(set(canNotReplaceEntryList))
 
 def formatSmali(smaliLib, smaliFileList = None):
-
-    print ">>> begin format smali files, please wait...."
+    Log.i("    begin format smali files, please wait....")
     if smaliFileList is not None:
         idx = 0
         while idx < len(smaliFileList):
@@ -253,13 +240,39 @@ def formatSmali(smaliLib, smaliFileList = None):
         for clsName in smaliLib.mSDict.keys():
             cSmali = smaliLib.getSmali(clsName)
             smaliLib.format(cSmali)
-    print ">>> format done"
+    Log.i("    format done")
+
+def replace(src, dst, type, name):
+    srcSmali = Smali.Smali(src)
+    dstSmali = Smali.Smali(dst)
+
+    if srcSmali is None:
+        Log.e("%s doesn't exist or is not smali file!" %src)
+        return False
+
+    if dstSmali is None:
+        Log.e("%s doesn't exist or is not smali file!" %dst)
+        return False
+
+    name = name.split()[-1]
+    srcEntry = srcSmali.getEntry(type, name)
+    if srcEntry is not None:
+        Log.i("Replace %s %s from %s to %s" %(type, name, src, dst))
+        dstSmali.replaceEntry(srcEntry)
+        dstSmali.out()
+        return True
+    else:
+        Log.e("Can not get %s:%s from %s" %(type, name, src))
+        return False
+
+def replaceMethod(src, dst, methodName):
+    replace(src, dst, SmaliEntry.METHOD, methodName)
 
 def usage():
     pass
 
 def main(argv):
-    options,args = getopt.getopt(argv[1:], "hafl:s:t:", [ "help", "autocomplete", "formatsmali", "library", "smali", "filter"])
+    options,args = getopt.getopt(argv[1:], "hafl:s:t:r", [ "help", "autocomplete", "formatsmali", "library", "smali", "filter", "replacemethod"])
     for name,value in options:
         if name in ("-h", "--help"):
             usage()
@@ -271,14 +284,16 @@ def main(argv):
             OPTIONS.libraryPath = value
         elif name in ("-t", "--filter"):
             OPTIONS.filterOutDir.append(os.path.abspath(value))
+        elif name in ("-r", "--replacemethod"):
+            OPTIONS.replaceMethod = True
         else:
-            print "Wrong parameters, see the usage...."
+            Log.w("Wrong parameters, see the usage....")
             usage()
             exit(1)
 
     if OPTIONS.autoComplete:
         if len(args) >= 6:
-            autoComplete(args[0], args[1], args[2], args[3], args[4], args[5:])
+            SAutoCom.SAutoCom.autocom(args[0], args[1], args[2], args[3], args[4], args[5:])
         else:
             usage()
             exit(1)
@@ -291,9 +306,12 @@ def main(argv):
                 usage()
                 exit(1)
         if len(args) > 0:
-            formatSmali(OPTIONS.libraryPath, args, OPTIONS.filterOutDir)
+            formatSmali(SmaliLib.SmaliLib(OPTIONS.libraryPath), args)
         else:
-            formatSmali(OPTIONS.libraryPath, None, OPTIONS.filterOutDir)
+            formatSmali(SmaliLib.SmaliLib(OPTIONS.libraryPath), None)
+    elif OPTIONS.replaceMethod:
+        if len(args) >= 3:
+            replaceMethod(args[0], args[1], args[2])
 
 if __name__ == "__main__":
     if len(sys.argv) > 2:

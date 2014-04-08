@@ -9,6 +9,11 @@ import SmaliEntryFactory
 import Smali
 import re
 import utils
+import sys
+
+sys.path.append('%s/autopatch' %os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from log import Log
+
 
 from Content import Content
 from SmaliLine import SmaliLine
@@ -47,10 +52,13 @@ class SmaliParser(object):
         entryList = []
         
         if not os.path.isfile(self.mSmaliFilePath):
-            print ">>> Error: %s doesn't exist!" %(self.mSmaliFilePath)
+            Log.d("Warning: %s doesn't exist!" %(self.mSmaliFilePath))
+            self.mParsed = True
             return
         
-        fileLinesList = file(self.mSmaliFilePath).readlines()
+        sFile = file(self.mSmaliFilePath)
+        fileLinesList = sFile.readlines()
+        sFile.close()
         idx = 0
         while idx < len(fileLinesList):
             if fileLinesList[idx][-1] == "\n":
@@ -134,6 +142,24 @@ class SmaliParser(object):
         
         self.mEntryList.append(entry)
         return True
+
+    def replaceEntry(self, entry):
+        if self.mParsed is False:
+            self.parse()
+
+        if entry is None:
+            return False
+
+        idx = 0
+        while idx < len(self.mEntryList):
+            if self.mEntryList[idx].equals(entry):
+                self.mEntryList[idx] = entry
+                return True
+            idx = idx + 1
+
+        self.addEntry(entry)
+        return True
+
 
 smaliFileRe = re.compile(r'(?:^.*%s$)|(?:^.*%s$)' % (SMALI_POST_SUFFIX, PART_SMALI_POST_SUFFIX))
 partSmaliFileRe = re.compile(r'(?:^.*%s$)' %(PART_SMALI_POST_SUFFIX))

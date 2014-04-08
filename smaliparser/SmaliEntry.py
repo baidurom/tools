@@ -89,7 +89,7 @@ class SmaliEntry(object):
     def equals(self, sEntry):
         if sEntry.mType is not None \
         and sEntry.mType == self.mType \
-        and sEntry.mContent == self.mContent:
+        and sEntry.getName() == self.getName():
             return True
         return False
 
@@ -104,10 +104,13 @@ class SmaliEntry(object):
     
     def getName(self):
         if self.mName is None:
+            if self.getFirstLine() is None:
+                return ""
+
             splitArray = self.getFirstLine().split()
             self.mName = splitArray[len(splitArray) - 1]
         return self.mName
-    
+
     def getKeyList(self):
         if self.mKeyList is None:
             splitArray = self.getFirstLine().split()
@@ -146,6 +149,9 @@ class SmaliEntry(object):
     
     def getAttributes(self):
         return string.join(self.getAttributeList())
+
+    def getSimpleString(self):
+        return  "%s %s->%s" %(self.getType(), self.getClassName(), self.getName())
 
     def toString(self):
         if self.getPreContentStr() is not None: 

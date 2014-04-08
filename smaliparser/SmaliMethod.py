@@ -7,8 +7,12 @@ Created on 2012-12-11
 '''
 
 import re
+import sys
+import os
 
 from SmaliEntry import SmaliEntry
+sys.path.append('%s/autopatch' %os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from log import Log
 
 INVOKE_DIRECT = "invoke-direct"
 INVOKE_INTERFACE = "invoke-interface"
@@ -32,7 +36,6 @@ class SmaliMethod(SmaliEntry):
     '''
     classdocs
     '''
-    
     def __init__(self, type, content, clsName, preContent=None):
         super(SmaliMethod, self).__init__(type, content, clsName, preContent)
         self.mInvokeMethods = None
@@ -102,3 +105,14 @@ class SmaliMethod(SmaliEntry):
         if modifed:
             self.setContentStr(entryStr)
         return modifed
+
+    def getReturnType(self):
+        return getReturnType(self.getName())
+
+def getReturnType(methodName):
+    splitArray = methodName.split(r')')
+    if len(splitArray) < 2:
+        Log.w("method %s return nothing!" %methodName)
+        return ""
+    else:
+        return splitArray[-1]
