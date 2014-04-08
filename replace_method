@@ -7,4 +7,27 @@
 CUR_DIR=$(dirname $0)
 SCHECK=$CUR_DIR/smaliparser/SCheck
 
+function usage()
+{
+    echo "################ USAGE ################"
+    echo "#"
+    echo "#    replace_method source target methodName"
+    echo "#    source: the source smali, where the method will copy from"
+    echo "#    target: the target smali, where the method will copy to"
+    echo "#    methodName: the method's name"
+    echo "#"
+    echo "# ex:"
+    echo "#    replace_method autopatch/bosp/services.jar.out/smali/com/android/server/am/ActivityManagerService.smali services.jar.out/smali/com/android/server/am/ActivityManagerService.smali 'moveTaskToFront(IILandroid/os/Bundle;)V'"
+    echo "#    it will replace the method moveTaskToFront(IILandroid/os/Bundle;)V in services.jar.out/smali/com/android/server/am/ActivityManagerService.smali by autopatch/bosp/services.jar.out/smali/com/android/server/am/ActivityManagerService.smali"
+    echo "#"
+    echo "# Attention:"
+    echo "# The method name should enclose in the quotes."
+    echo "#"
+}
+
+if [ $# == 0 ]; then
+    usage
+    exit 1
+fi
+
 $SCHECK --replacemethod $@
