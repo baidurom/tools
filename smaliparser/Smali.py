@@ -206,10 +206,13 @@ class Smali(object):
     def addEntry(self, entry):
         return self.mParser.addEntry(entry)
 
+    def replaceEntry(self, entry):
+        return self.mParser.replaceEntry(entry)
+
     def getClassName(self):
         if self.mClassName is None:
             entryList = self.getEntryList(SmaliEntry.CLASS, None, None, 1)
-        
+
             if len(entryList) != 1:
                 if not self.mIsPartSmali:
                     print "Warning: should has only one class define! (%s)" %(self.mPath)
@@ -355,7 +358,11 @@ class Smali(object):
         if outPath is None:
             outPath = self.getPath()
         sFile = file(outPath, "w+")
-        sFile.write(self.toString())
+
+        outStr = self.toString()
+        if outStr is None:
+            return
+        sFile.write(outStr)
         sFile.close()
 
 DEFAULT_HASH_LEN = 6
