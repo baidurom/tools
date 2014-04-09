@@ -51,7 +51,7 @@ class SCheck(object):
             vSmali = self.mVSLib.getSmali(smali.getClassName())
             if vSmali is None:
                 Log.e("Can't get smali %s from vendor: %s"  %(smali.getClassName(), string.join(unImplementMethods)))
-                return canReplaceEntryList
+                return (canReplaceEntryList, canNotReplaceEntryList)
             
             unImplMethodEntryList = getEntryListByNameList(vSmali, SmaliEntry.METHOD, unImplementMethods)
             (canReplaceEntryList, canNotReplaceEntryList) = getCanReplaceMethods(self.mMSLib, self.mVSLib, smali.getClassName(), unImplMethodEntryList)
