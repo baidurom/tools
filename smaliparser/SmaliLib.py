@@ -9,13 +9,14 @@ import SmaliEntry
 import SmaliMethod
 import string
 import SmaliParser
+import os
 
 DEBUG = False
 class SmaliLib(object):
     '''
     classdocs
     '''
-
+    mSmaliLibDict = {}
     def __init__(self, libPath, filterOutDirList = None):
         '''
         Constructor
@@ -26,6 +27,21 @@ class SmaliLib(object):
         self.mAlreadyParsedInvoke = False
         self.mPath = libPath
         self.mFieldFormatMap = {}
+        self.mSmaliFileList = None
+
+    @staticmethod
+    def getSmaliLib(libPath):
+        absRoot = os.path.abspath(libPath)
+        if not SmaliLib.mSmaliLibDict.has_key(absRoot):
+            SmaliLib.mSmaliLibDict[absRoot] = SmaliLib(libPath)
+        return SmaliLib.mSmaliLibDict[absRoot]
+    
+    def getSmaliFileList(self):
+        if self.mSmaliFileList is None:
+            self.mSmaliFileList = []
+            for clsName in self.mSDict.keys():
+                self.mSmaliFileList.append(self.getSmali(clsName).getPath())
+        return self.mSmaliFileList
     
     def getPath(self):
         return self.mPath

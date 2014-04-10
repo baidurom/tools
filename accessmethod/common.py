@@ -71,6 +71,28 @@ class Smali:
             sName = Smali.getSmaliRoot(path)
             return sName+".smali"
         raise ValueError("Not a smali path:"+path)
+
+    @staticmethod
+    def getSmaliMainPath(path):
+        """
+            get root smali file path of path
+            input xx/xx/A$1.smali  return xx/xx/A.smali
+        """
+        if Smali.isSmali(path):
+            sName = Smali.getSmaliRoot(path)
+            return os.path.join(os.path.dirname(path), sName+".smali")
+        raise ValueError("Not a smali path:"+path)
+
+    @staticmethod
+    def getDataFilePath(path):
+        """
+            get data file path of path
+            input xx/xx/A$1.smali  return xx/xx/A.data
+        """
+        if Smali.isSmali(path):
+            sName = Smali.getSmaliRoot(path)
+            return os.path.join(os.path.dirname(path), sName+".data")
+        raise ValueError("Not a smali path:"+path)
 #End of Smali
 
 
