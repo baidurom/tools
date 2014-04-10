@@ -17,6 +17,11 @@ import SAutoCom
 sys.path.append('%s/autopatch' %os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from log import Log
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from format import Format
+
+from SmaliLib import SmaliLib
+
 class Options(object): pass
 OPTIONS = Options()
 OPTIONS.autoComplete = False
@@ -38,10 +43,10 @@ class SCheck(object):
         '''
         Constructor
         '''
-        self.mVSLib = SmaliLib.SmaliLib(vendorDir)
-        self.mASLib = SmaliLib.SmaliLib(aospDir)
-        self.mBSLib = SmaliLib.SmaliLib(bospDir)
-        self.mMSLib = SmaliLib.SmaliLib(mergedDir)
+        self.mVSLib = SmaliLib.getSmaliLib(vendorDir)
+        self.mASLib = SmaliLib.getSmaliLib(aospDir)
+        self.mBSLib = SmaliLib.getSmaliLib(bospDir)
+        self.mMSLib = SmaliLib.getSmaliLib(mergedDir)
     
     def autoComplete(self, smali):
         unImplementMethods = self.getUnImplementMethods(smali)
@@ -254,16 +259,25 @@ def replace(src, dst, type, name):
         Log.e("%s doesn't exist or is not smali file!" %dst)
         return False
 
+    srcFormat = Format("", src)
+    dstFormat = Format("", dst)
+    srcFormat.do(Format.ACCESS_TO_NAME)
+    dstFormat.do(Format.ACCESS_TO_NAME)
+
     name = name.split()[-1]
     srcEntry = srcSmali.getEntry(type, name)
+    returnValue = False
     if srcEntry is not None:
         Log.i("Replace %s %s from %s to %s" %(type, name, src, dst))
         dstSmali.replaceEntry(srcEntry)
         dstSmali.out()
-        return True
+        returnValue = True
     else:
         Log.e("Can not get %s:%s from %s" %(type, name, src))
-        return False
+        returnValue = False
+    srcFormat.undo()
+    dstFormat.undo()
+    return returnValue
 
 def replaceMethod(src, dst, methodName):
     replace(src, dst, SmaliEntry.METHOD, methodName)
@@ -306,9 +320,9 @@ def main(argv):
                 usage()
                 exit(1)
         if len(args) > 0:
-            formatSmali(SmaliLib.SmaliLib(OPTIONS.libraryPath), args)
+            formatSmali(SmaliLib.getSmaliLib(OPTIONS.libraryPath), args)
         else:
-            formatSmali(SmaliLib.SmaliLib(OPTIONS.libraryPath), None)
+            formatSmali(SmaliLib.getSmaliLib(OPTIONS.libraryPath), None)
     elif OPTIONS.replaceMethod:
         if len(args) >= 3:
             replaceMethod(args[0], args[1], args[2])

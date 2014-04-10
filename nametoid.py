@@ -19,16 +19,21 @@ class nametoid(object):
     '''
     classdocs
     '''
+    mIdToNameDict = {}
 
-
-    def __init__(self, publicXml, inDir):
+    def __init__(self, xmlPath, inDir):
         '''
         Constructor
         '''
-
-        self.publicXml = minidom.parse(publicXml)
         self.smaliFileList = self.getInFileList(inDir)
-        self.nameToIdMap = self.getNameToIdMap()
+        self.nameToIdMap = nametoid.getMap(xmlPath)
+
+    @staticmethod
+    def getMap(xmlPath):
+        absPath = os.path.abspath(xmlPath)
+        if not nametoid.mIdToNameDict.has_key(absPath):
+            nametoid.mIdToNameDict[absPath] = nametoid.getIdToNameMap(absPath)
+        return nametoid.mIdToNameDict[absPath]
 
     def getInFileList(self, inDir):
         if os.path.isfile(inDir):
@@ -43,8 +48,10 @@ class nametoid(object):
 
         return filelist
 
-    def getNameToIdMap(self):
-        root = self.publicXml.documentElement
+    @staticmethod
+    def getIdToNameMap(xmlPath):
+        publicXml = minidom.parse(xmlPath)
+        root = publicXml.documentElement
         idList = {}
 
         for item in root.childNodes:

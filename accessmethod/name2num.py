@@ -56,6 +56,8 @@ class NameToNum:
 
 
 def NameToNumForOneFile(path):
+    if Smali.isSmali(path):
+        path = Smali.getDataFilePath(path) #change smali path to data file path
     if DataFile.isDataFile(path) and os.path.exists(path):
         fDir = os.path.dirname(path)
         if cmp(fDir, "") == 0:
@@ -80,13 +82,14 @@ def NameToNumForOneFile(path):
 
 def Usage():
     print "Usage: name2num.py  aa/bb/A.data"
+    print "       name2num.py  aa/bb/A.smali"
     print "       name2num.py  aa/bb"
 
 if __name__ == '__main__':
     argLen = len(sys.argv)
     if argLen == 2:
         path = sys.argv[1]
-        if os.path.isfile(path) and DataFile.isDataFile(path):
+        if os.path.isfile(path) and (DataFile.isDataFile(path) or Smali.isSmali(path)):
             NameToNumForOneFile(path)
 
         elif os.path.isdir(path):
