@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<features version="4.2">
+<features version="4.0">
 
 <!-- ************ The belowing files are optional, If no boot.img presented, these revision are ignored ************* -->
     <feature require="OPTION" description="Modifications in boot.img" >
