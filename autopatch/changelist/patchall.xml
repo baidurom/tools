@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<features version="4.0">
+
+<!-- ************ The belowing files are optional, If no boot.img presented, these revision are ignored ************* -->
+    <feature require="OPTION" description="Modifications in boot.img" >
+        <!-- Root and enable adb on booing -->
+        <revise action="MERGE" target="vendor/BOOT/RAMDISK/default.prop" patch="revise-default.prop.xml" />
+
+        <!-- Launch Baidu services on booting -->
+        <revise action="MERGE"  target="vendor/BOOT/RAMDISK/init.rc"  patch="revise-init.rc.xml" />
+    </feature>
+
+
+<!-- ********************** The belowing files are probably neccesary bringup features ****************************** -->
+    <feature require="MUST" description="Patch bringup features" >
+        <!-- Baidu UI -->
+        <revise action="MERGE" target="framework-res/AndroidManifest.xml" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/res/AssetManager.smali"
+                               patch ="revise-AssetManager.xml" />
+
+        <!-- Unpack native libs for system app -->
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/pm/PackageManagerService.smali"
+                               patch ="revise-PackageManagerService.xml" />
+
+        <!-- Load Baidu service -->
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/ServerThread.smali"
+                               patch ="revise-ServerThread.xml" />
+
+        <!-- Optimization for caller location and potograph -->
+        <revise action="MERGE"   target="framework.jar.out/smali/com/android/internal/telephony/CallerInfo.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/com/android/internal/telephony/CallerInfoAsyncQuery*"  />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/widget/QuickContactBadge*" />
+
+        <!-- Baidu SD card strategy -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/os/Environment.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/os/Environment$UserEnvironment.smali" version="4.2" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/MountService.smali" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/MountService$SdType.smali" />
+
+        <!-- Baidu widget extention class-->
+        <revise action="ADD"   target="framework.jar.out/smali/android/util/FeatureData.smali"  />
+        <revise action="ADD"   target="framework.jar.out/smali/com/android/internal/widget/RecycleFilletListView.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/app/AlertController.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/Notification.smali" />
+
+        <!-- Missed AIDL interface. The whole route of method should be merged -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/telephony/TelephonyManager.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/telephony/IPhoneSubInfo.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/telephony/IPhoneSubInfo$Stub$Proxy.smali" />
+        <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/IccCard.smali" version="4.2" />
+        <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/PhoneSubInfo.smali" version="4.2" />
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/telephony/IccCard.smali" version="4.1|4.0" />
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/telephony/PhoneSubInfo.smali" version="4.1|4.0" />
+
+        <!-- Missed method in CallManager -->
+        <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/CallManager.smali"  version="4.2" />
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/telephony/CallManager.smali"  version="4.1|4.0" />
+
+        <!-- set memory persistent for baidu launcher -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityManager.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityManagerNative.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityManagerProxy.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/IActivityManager.smali" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityManagerService.smali" />
+
+        <!-- Quick boot feature -->
+        <revise action="REPLACE" target="services.jar.out/smali/com/android/server/am/QuickbootActivityManagerServiceHook*" />
+    </feature>
+
+
+    <feature require="MUST" description="Patch all the other features">
+        <!-- Prehandle incoming short message for Baidu -->
+        <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/SMSDispatcher.smali" version="4.2" />
+        <revise action="ADD"   target="telephony-common.jar.out/smali/com/android/internal/telephony/SMSDispatcher$TrafficMonitorMessageReceiverClass.smali" version="4.2" />
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/telephony/SMSDispatcher.smali"          version="4.1|4.0" />
+        <revise action="ADD"   target="framework.jar.out/smali/com/android/internal/telephony/SMSDispatcher$baidu_1.smali"  version="4.1|4.0" />
+        <!-- Optional. Prevent Junk SMS.
+        <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/WapPushOverSms.smali" />
+        -->
+
+		<!-- Network firewall policy -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/net/NetworkPolicyManager.smali" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/net/NetworkPolicyManagerService.smali" />
+
+        <!-- Hook to reorder SMS broadcast -->
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/BroadcastRecord.smali" />
+
+        <!-- Baidu default ringtone settings -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/provider/Settings$System.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/media/MediaScanner$MyMediaScannerClient.smali" />
+
+        <!-- Baidu Lockscreen -->
+        <revise action="ADD"   	 target="framework.jar.out/smali/com/android/internal/widget/DragView.smali" />
+        <revise action="MERGE" 	 target="framework.jar.out/smali/com/android/internal/widget/LockPatternUtils.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/com/android/internal/widget/DigitalClock.smali" />
+
+        <!-- Dynamic permission checking -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ContextImpl$ApplicationContentResolver.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/Instrumentation.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/location/LocationManager.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/net/ConnectivityManager.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/telephony/IccSmsInterfaceManager.smali"        version="4.1|4.0" />
+        <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/IccSmsInterfaceManager.smali" version="4.2" />
+
+        <!-- Baidu Backup service -->
+        <revise action="REPLACE" target="services.jar.out/smali/com/android/server/BackupManagerService*" />
+
+        <!-- Baidu TextView -->
+        <revise action="REPLACE" target="framework.jar.out/smali/android/widget/Editor*" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/widget/TextView.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/widget/TextView$ChangeWatcher.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/text/Layout.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/com/android/internal/util/SearchHelper.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/com/android/internal/util/WordSegment.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/com/android/internal/widget/PopupLayout.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/com/android/internal/widget/MagnifierView.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/widget/MagnifierView2.smali" />
+
+        <!-- Use flags to indicator results -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/Intent.smali" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityStack.smali" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/am/ActivityStack$baidu_1.smali" version="4.1|4.0" />
+
+        <!-- Add back pad listener -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/Activity.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/app/Activity$TouchPadListener.smali" />
+
+        <!-- Baidu multitheme -->
+        <revise action="ADD" target="framework.jar.out/smali/android/content/ThemeDefine.smali"/>
+        <revise action="REPLACE" target="framework.jar.out/smali/com/android/internal/app/ActionBarImpl.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/com/android/internal/widget/ActionBarView*" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/view/VolumePanel*" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/res/Resources.smali" />
+        <revise action="ADD"   target="framework.jar.out/smali/android/content/res/Resources$baidu_1.smali" version="4.1|4.0" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/pm/ActivityInfo.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/res/AssetManager.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/res/AssetManager$AssetInputStream.smali" />
+        <!-- Different 4.2/4.1/4.2 -->
+        <revise action="ADD"   target="framework.jar.out/smali/android/content/res/AssetManager$ReadChannelThread.smali" version="4.2" />
+        <revise action="ADD"   target="framework.jar.out/smali/android/content/res/AssetManager$MContentObserver.smali"  version="4.2" />
+        <revise action="ADD"   target="framework.jar.out/smali/android/content/res/AssetManager$baidu_1.smali" version="4.1|4.0" />
+        <revise action="ADD"   target="framework.jar.out/smali/android/content/res/AssetManager$baidu_2.smali" version="4.1|4.0" />
+        <!-- Different 4.2/4.1/4.2 -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/res/Configuration.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityThread.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityThread$2.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ApplicationPackageManager.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/ContextImpl.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/view/WindowManager$LayoutParams.smali" />
+
+        <!-- Reboot -->
+        <!-- Different 4.2/4.1/4.0 -->
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/power/ShutdownThread.smali"         version="4.2" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/power/ShutdownThread$baidu_0.smali" version="4.2" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/power/ShutdownThread$baidu_1.smali" version="4.2" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/power/ShutdownThread$baidu_2.smali" version="4.2" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/pm/ShutdownThread.smali"         version="4.1|4.0" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/pm/ShutdownThread$baidu_0.smali" version="4.1|4.0" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/pm/ShutdownThread$baidu_1.smali" version="4.1|4.0" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/pm/ShutdownThread$baidu_2.smali" version="4.1|4.0" />
+        <!-- Different 4.2/4.1/4.0 -->
+
+        <!-- Refine change app icon and label in framework -->
+        <revise action="MERGE"   target="framework.jar.out/smali/android/content/pm/PackageItemInfo.smali" />
+        <revise action="MERGE"   target="framework.jar.out/smali/android/content/pm/ResolveInfo.smali" />
+
+        <!-- Reboot -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/view/WindowManagerPolicy$WindowManagerFuncs.smali" />
+
+        <!-- Battery Statistic -->
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/BatteryStatsService.smali" />
+
+        <!-- Refuse to active admin if not has ACTION_DEVICE_ADMIN_ENABLED -->
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/DevicePolicyManagerService.smali" />
+
+        <!-- Reboot to recovery -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/os/RecoverySystem.smali" />
+
+        <!-- Parse yi package -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/pm/PackageParser.smali" />
+
+        <!-- Don't show popup when ringing -->
+        <revise action="MERGE" target="framework.jar.out/smali/android/view/WindowManagerGlobal.smali" version="4.2" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/view/WindowManagerImpl.smali"   version="4.1|4.0"/>
+
+        <!-- Device Specific feature parser. Only 4.1 -->
+        <revise action="ADD"   target="framework.jar.out/smali/com/android/internal/telephony/DeviceSpecPropertyParser.smali"  version="4.1" />
+
+        <!-- Only 4.1 need this file -->
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/pm/Settings.smali" version="4.1" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/wm/WindowManagerService.smali" version="4.1" />
+    </feature>
+
+<!-- ************************* The belowing features are not merged right now ********************************** -->
+<!--     <feature require="IGNORE" description="features ignore temporary" >
+        <revise action="MERGE" target="framework.jar.out/smali/android/location/CountryDetector.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/os/RecoverySystem.smali" />
+
+        Re-calculate auto brightness value
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/SamplingProfilerService.smali" />
+
+		<revise action="MERGE" target="services.jar.out/smali/com/android/server/NotificationManagerService.smali" />
+
+        Baidu webkit
+        <revise action="ADD" target="framework.jar.out/smali/android/webkit/PopupWindowView.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/com/android/internal/widget/MagnifierView.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/webkit/MagnifierView_Rect.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/webkit/MagnifierView.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/webkit/MagnifierSelectionPopupWindowView.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/webkit/MagnifierSelectionPopupWindowView_Rect.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/webkit/WebSettings.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/webkit/WebTextView.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/webkit/WebViewClassic.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/webkit/WebViewCore.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/webkit/WebView.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/webkit/WebViewInputDispatcher.smali" />
+
+        Optimize for retoring to factory
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/os/storage/ExternalStorageFormatter.smali" />
+        Anonymous inner class, not sure whether matched in vendor
+        <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/os/storage/ExternalStorageFormatter$3.smali" />
+
+        Optimize for 512M devices memory clean up
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ProcessList.smali" />
+
+        Semiview popup when input window show
+        <revise action="MERGE" target="framework.jar.out/smali/android/inputmethodservice/InputMethodService.smali" />
+
+        Quick Boot and PowerOff Alarm Feature
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/AlarmManager.smali"/>
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/IAlarmManager.smali"/>
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/IAlarmManager$Stub.smali"/>
+        <revise action="MERGE" target="framework.jar.out/smali/android/app/IAlarmManager$Stub$Proxy.smali"/>
+
+        <revise action="MERGE" target="framework.jar.out/smali/android/net/wifi/IWifiManager.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/net/wifi/IWifiManager$Stub.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/net/wifi/IWifiManager$Stub$Proxy.smali" />
+
+        <revise action="MERGE" target="framework.jar.out/smali/android/view/WindowManager.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/accessibility/AccessibilityManagerService.smali" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityManagerService.smali" />
+
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/wm/WindowManagerService.smali" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/NotificationManagerService.smali" />
+
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/AlarmManagerService.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/BatteryService.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/WifiService.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/net/NetworkStatsService.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/power/DisplayPowerController.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/power/PowerManagerService.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/power/ShutdownThread.smali"/>
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/usb/UsbDeviceManager.smali" />
+
+        <revise action="REPLACE" target="services.jar.out/smali/com/android/server/am/QuickbootActivityManagerServiceHook*" />
+        <revise action="REPLACE" target="services.jar.out/smali/com/android/server/power/QuickbootManager*" />
+    </feature> -->
+
+</features>

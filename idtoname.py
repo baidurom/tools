@@ -17,17 +17,26 @@ class idtoname(object):
     '''
     classdocs
     '''
+    mIdToNameDict = {}
 
-
-    def __init__(self, publicXml, inDir):
+    def __init__(self, xmlPath, inDir):
         '''
         Constructor
         '''
-        self.publicXml = minidom.parse(publicXml)
         self.smaliFileList = self.getInFileList(inDir)
-        self.idToNameMap = self.getIdToNameMap()
+        self.idToNameMap = idtoname.getMap(xmlPath)
+
+    @staticmethod
+    def getMap(xmlPath):
+        absPath = os.path.abspath(xmlPath)
+        if not idtoname.mIdToNameDict.has_key(absPath):
+            idtoname.mIdToNameDict[absPath] = idtoname.getIdToNameMap(absPath)
+        return idtoname.mIdToNameDict[absPath]
 
     def getInFileList(self, inDir):
+        if os.path.isfile(inDir):
+            return [inDir]
+
         filelist = []
         smaliRe = re.compile(r'(?:.*\.smali)')
         for root, dirs, files in os.walk(inDir):
@@ -37,8 +46,10 @@ class idtoname(object):
 
         return filelist
 
-    def getIdToNameMap(self):
-        root = self.publicXml.documentElement
+    @staticmethod
+    def getIdToNameMap(xmlPath):
+        publicXml = minidom.parse(xmlPath)
+        root = publicXml.documentElement
         idList = {}
 
         for item in root.childNodes:
@@ -71,7 +82,7 @@ class idtoname(object):
                 if name is not None:
                     fileStr = fileStr.replace(matchId, r'#%s#t' % name)
                     modify = True
-                    print "change id from %s to name %s" % (matchId, name)
+                    Log.d("change id from %s to name %s" % (matchId, name))
 
             for matchArrIdStr in  arrayIdRule.findall(fileStr):
                 matchArrId = self.getArrayId(matchArrIdStr)
@@ -79,13 +90,20 @@ class idtoname(object):
                 if arrName is not None:
                     fileStr = fileStr.replace(matchArrIdStr, r'#%s#a' % arrName)
                     modify = True
-                    print "change array id from %s to name %s" % (matchArrIdStr, arrName)
+                    Log.d("change array id from %s to name %s" % (matchArrIdStr, arrName))
 
             if modify is True:
                 sf.seek(0, 0)
                 sf.truncate()
                 sf.write(fileStr)
             sf.close()
+
+class Log:
+    DEBUG = False
+
+    @staticmethod
+    def d(message):
+        if Log.DEBUG: print message
 
 def main():
     print "start change id to name...."

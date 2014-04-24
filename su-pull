@@ -1,0 +1,50 @@
+#!/bin/bash
+
+src=$1
+target=$2
+
+src_basename=`basename $src`
+ANDROID_PATH=( /sbin /vendor/bin /system/sbin /system/bin /system/xbin )
+SU_PATH=""
+
+function get_su_path()
+{
+	i=1
+	while [ $i -lt ${#ANDROID_PATH} ];
+	do
+		suPath=${ANDROID_PATH[$i]}/su
+		suPerm=`adb shell ls -l $suPath 2>&1`
+		
+		if [[ $suPerm == *"No such file or directory"* ]];then
+			echo "wrong su path: $suPath"
+		else
+			suPerm=`echo $suPerm | awk '{print $1}'`
+			echo "su path: $suPath, suPerm: $suPerm"
+			while [[ $suPerm != *s* ]];
+			do
+				sleep 1
+				suPerm=`adb shell ls -l $suPath 2>&1 | awk '{print $1}'`
+				echo "wait su ok! suPerm: $suPerm"
+			done
+			
+			echo "su permission is ok!"
+			SU_PATH=$suPath
+			break
+		fi
+		let "i=$i+1"
+	done
+}
+
+if [ x"$target" == x ];then
+	target=$PWD/$src_basename
+fi
+
+adb wait-for-device
+get_su_path
+
+if [ x"$SU_PATH" != x ];then
+	echo "begin copy $src to /sdcard/su-pull-tmp/$src_basename"
+	echo "su -c \"rm -rf /sdcard/su-pull-tmp; mkdir -p /sdcard/su-pull-tmp; cp -r $src /sdcard/su-pull-tmp/$src_basename; chmod 777 /sdcard/su-pull-tmp/$src_basename\"; exit" | adb shell
+	adb pull /sdcard/su-pull-tmp/$src_basename $target
+	echo "su -c \"rm -rf /sdcard/su-pull-tmp\"; exit" | adb shell
+fi
