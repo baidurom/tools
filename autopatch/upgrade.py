@@ -46,9 +46,10 @@ class Upgrade:
             if curVersion >= newVersion:
                 break;
 
-            if curVersion < ROMVersion.toDigit(patchName):
+            delta = ROMVersion.toDigit(patchName) - curVersion
+            if delta > 0:
                 self.applyPatch(patchName)
-                curVersion += 1
+                curVersion += delta
 
     def applyPatch(self, patchName):
         """ Apply the patch.
@@ -70,6 +71,12 @@ class ROMVersion:
     """ Model of the ROM versions.
     """
 
+    SPECIAL_VERSIONS = {"V6"       : 47.5,
+                        "ROMV6.xml": 47.5,
+                        "ROMV7.xml": 0.5,  # To be extended
+                        "ROMV8.xml": 0.5   # To be extended
+                       }
+
     mPatches = []
 
     def __init__(self):
@@ -90,15 +97,22 @@ class ROMVersion:
             Patch name is like ROM39, ROM40, etc.
         """
 
-        version1 = ROMVersion.toDigit(patchName1)
-        version2 = ROMVersion.toDigit(patchName2)
-        return version1 - version2
+        delta = ROMVersion.toDigit(patchName1) - ROMVersion.toDigit(patchName2)
+        if delta == 0: return 0
+        if delta >  0: return 1
+        if delta <  0: return -1
 
     @staticmethod
     def toDigit(patchName):
+        """ Change to version number(integer or special float) from patch name.
+        """
+
+        specialVersion = ROMVersion.SPECIAL_VERSIONS.get(patchName)
+        if specialVersion != None:
+            return specialVersion
+
         version = filter(str.isdigit, patchName)
         return string.atoi(version)
-
 
 
 if __name__ == "__main__":

@@ -43,6 +43,51 @@ class AutoPatch:
 # End of class AutoPatch
 
 
+class Version:
+    """ Version control for file
+    """
+
+    ANDROID_4_0 = 1
+    ANDROID_4_1 = ANDROID_4_0 << 1
+    ANDROID_4_2 = ANDROID_4_1 << 1
+    ANDROID_4_3 = ANDROID_4_2 << 1
+    ANDROID_4_4 = ANDROID_4_3 << 1
+
+
+    CURRENT_VERSION = ~0
+
+    @staticmethod
+    def parseCurrentVersion(patchXML):
+        """ Parse out current version from the patch XML
+        """
+
+        try:
+            Version.CURRENT_VERSION = Version.parse(patchXML.getroot().attrib['version'])
+        except KeyError:
+            pass
+
+    @staticmethod
+    def parse(versionStr):
+        versionInt = 0
+        for version in versionStr.split("|"):
+            if version == "4.0" : versionInt |= Version.ANDROID_4_0
+            if version == "4.1" : versionInt |= Version.ANDROID_4_1
+            if version == "4.2" : versionInt |= Version.ANDROID_4_2
+            if version == "4.3" : versionInt |= Version.ANDROID_4_3
+            if version == "4.4" : versionInt |= Version.ANDROID_4_4
+
+        Log.d("Version is %d" % versionInt);
+        return versionInt
+
+    @staticmethod
+    def match(versionStr):
+        if versionStr != None:
+            version = Version.parse(versionStr)
+        else:
+            version = Version.CURRENT_VERSION
+
+        return Version.CURRENT_VERSION & version
+
 class AutoPatchXML:
     """ Represent the tree model of the patch XML.
     """
@@ -52,6 +97,9 @@ class AutoPatchXML:
         """
 
         XMLDom = ET.parse(Config.PATCH_XML)
+
+        Version.parseCurrentVersion(XMLDom)
+
         for feature in XMLDom.findall('feature'):
             self.handleRevise(feature)
 
@@ -62,15 +110,17 @@ class AutoPatchXML:
         require = feature.attrib['require']
         description = feature.attrib['description']
 
-        if require == "MUST":
-            Log.i("\n>>> [M] " + description)
+        if self.needRevise(require):
+            Log.i("\n [%s]" % description)
             for revise in feature:
                 ReviseExecutor(revise).run()
- 
-        elif Config.REVISE_OPTION and require == "OPTION":
-            Log.i("\n>>> [O] " + description)
-            for revise in feature:
-                ReviseExecutor(revise).run()
+
+    def needRevise(self, require):
+        if   require == "MUST"   : require = Config.MUST
+        elif require == "OPTION" : require = Config.OPTION
+        elif require == "IGNORE" : require = Config.IGNORE
+
+        return require & Config.REQUIRE
 
 # End of class AutoPatchXML
 
@@ -103,8 +153,17 @@ class ReviseExecutor:
         except KeyError:
             self.mPatch = None
 
+        # Initialize version if defined
+        try:
+            self.mVersion = revise.attrib['version']
+        except KeyError:
+            self.mVersion = None
+
 
     def run(self):
+        if Version.match(self.mVersion) == False:
+            return
+
         try:
             if   self.action == ReviseExecutor.ADD:     self.add()
             elif self.action == ReviseExecutor.REPLACE: self.replace()
@@ -122,7 +181,7 @@ class ReviseExecutor:
         """
 
         if not os.path.exists(source):
-            Log.fail("File not exist. " + source)
+            Log.fail("File not exist: " + source)
             return
 
         if os.path.exists(target):
@@ -159,7 +218,7 @@ class ReviseExecutor:
 
     def merge(self): 
         if not os.path.exists(self.mTarget):
-            Log.fail("File not exist " + self.mTarget)
+            Log.fail("File not exist: " + self.mTarget)
             return
 
         Log.i(" MERGE    " + self.mTarget)

@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <features>
 
-    <feature require="OPTION" description="Better support multi-theme" >
+    <feature require="MUST" description="Better support multi-theme" >
         <revise action="MERGE" target="framework.jar.out/smali/android/content/res/Resources.smali" />
         <revise action="MERGE" target="framework.jar.out/smali/android/content/res/AssetManager.smali" />
     </feature>
 
-    <feature require="OPTION" description="Add app access controller" >
+    <feature require="MUST" description="Add app access controller" >
         <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityManagerService.smali" />
         <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityStack.smali" />
     </feature>
 
-    <feature require="OPTION" description="Add back pad listener" >
+    <feature require="MUST" description="Add back pad listener" >
         <revise action="MERGE" target="framework.jar.out/smali/android/app/Activity.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/app/Activity$TouchPadListener.smali" />
     </feature>
 
 </features>
