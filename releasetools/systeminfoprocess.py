@@ -115,22 +115,42 @@ def nameToID(name):
         id = android_ids[name]
     return str(id)
 
-def turnModToNum(mod):
-    num = 0
-    if cmp(mod[0], "r") == 0:
-        num += 4
-    if cmp(mod[1], "w") == 0:
-        num += 2
-    if cmp(mod[2], "x") == 0 or cmp(mod[2], "s") == 0:
-        num += 1
-    return str(num)
-
 def modToNum(mod):
-    ownMod=mod[1:4]
-    grpMod=mod[4:7]
-    otrMod=mod[7:10]
-    newMod=turnModToNum(ownMod)+turnModToNum(grpMod)+turnModToNum(otrMod)
-    return newMod
+    sbit = 0
+    ubit = 0
+    gbit = 0
+    obit = 0
+    if cmp(mod[1], "r") == 0:
+        ubit += 4
+    if cmp(mod[2], "w") == 0:
+        ubit += 2
+    if cmp(mod[3], "x") == 0:
+        ubit += 1
+    if cmp(mod[3], "s") == 0:
+        ubit += 1
+        sbit += 4
+    if cmp(mod[4], "r") == 0:
+        gbit += 4
+    if cmp(mod[5], "w") == 0:
+        gbit += 2
+    if cmp(mod[6], "x") == 0:
+        gbit += 1
+    if cmp(mod[6], "s") == 0:
+        gbit += 1
+        sbit += 2
+    if cmp(mod[7], "r") == 0:
+        obit += 4
+    if cmp(mod[8], "w") == 0:
+        obit += 2
+    if cmp(mod[9], "x") == 0:
+        obit += 1
+    if cmp(mod[9], "s") == 0:
+        obit += 1
+        sbit += 1
+    if sbit > 0:
+        return str(sbit)+str(ubit)+str(gbit)+str(obit)
+    else:
+        return str(ubit)+str(gbit)+str(obit)
 
 def main(fileinfo, systeminfo, linkinfo):
     fFile = open(fileinfo, 'r')
@@ -151,6 +171,7 @@ def main(fileinfo, systeminfo, linkinfo):
             else:
                 lpath = os.path.join(dir, lname)
             lFile.write(path+"|"+lpath+"\n")
+            sFile.write(path+" "+uid+" "+gid+" "+prop+"\n")
         else:
             prop = modToNum(pList[0]) #prop
             uid = nameToID(pList[1])  #uid

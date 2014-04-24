@@ -17,9 +17,13 @@ class Config:
     """ Configuration.
     """
 
-    # Whether to revise OPTION feature, default to be True
-    REVISE_OPTION = True
+#### Require values
+    MUST   = 0x0001
+    OPTION = 0x0010
+    IGNORE = 0x0100
 
+    # Default to require MUST
+    REQUIRE = MUST
 
 ### Root directory   
     # Root directory of current project
@@ -82,10 +86,7 @@ class Config:
     @staticmethod
     def setReviseOption(option):
         option = option.lower()
-        if option == "true":
-            Config.REVISE_OPTION = True
-        elif option == "false" :
-            Config.REVISE_OPTION = False
+        if option == "true": Config.REQUIRE |= Config.OPTION
 
     @staticmethod
     def createReject(target):
@@ -105,7 +106,6 @@ class Config:
         Log.d("NEWER_DIR:\t" + Config.NEWER_DIR)
         Log.d("---")
         Log.d("PATCH_XML:\t" + Config.PATCH_XML)
-        Log.d("REVISE_OPTION:\t" + str(Config.REVISE_OPTION))
         Log.d("-----------------------------------------------------------")
 
 # End of class Config

@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <features>
 
-    <feature require="OPTION" description="Use flags to indicator results" >
+    <feature require="MUST" description="Use flags to indicator results" >
         <revise action="MERGE" target="framework.jar.out/smali/android/content/Intent.smali" />
         <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityStack.smali" />
     </feature>
 
-    <feature require="OPTION" description="Add channel provider and push" >
+    <feature require="MUST" description="Add channel provider and push" >
         <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityThread.smali" />
         <revise action="MERGE" target="framework.jar.out/smali/android/content/res/AssetManager.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/res/AssetManager$1.smali" />
+        <revise action="ADD" target="framework.jar.out/smali/android/content/res/AssetManager$2.smali" />
     </feature>
 
-    <feature require="OPTION" description="set memory persistent for baidu launcher" >
+    <feature require="MUST" description="set memory persistent for baidu launcher" >
         <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityManager.smali" />
         <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityManagerNative.smali" />
         <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityManagerProxy.smali" />

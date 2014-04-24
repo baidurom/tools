@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <features>
 
-    <feature require="OPTION" description="Modify check permission for system process" >
+    <feature require="MUST" description="Modify check permission for system process" >
         <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/BatteryStatsService.smali" />
     </feature>
 
-    <feature require="OPTION" description="Decode channel file with BASE64" >
+    <feature require="MUST" description="Decode channel file with BASE64" >
         <revise action="MERGE" target="framework.jar.out/smali/android/content/res/AssetManager.smali" />
     </feature>
 

@@ -22,7 +22,7 @@ try:
             linkname = os.path.basename(linkfile)
             dstname = os.path.basename(dstfile)
             if not (os.path.exists(linkdir)):
-                os.mkdir(linkdir)
+                os.makedirs(linkdir)
             if cmp(dstfile[0], "/") == 0: # use a absolute path
                 lncmd = "cd " + linkdir + "; " + "ln -sf " + dstfile + " " + linkname
             else:
