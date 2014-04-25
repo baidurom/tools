@@ -71,9 +71,10 @@
     <feature require="MUST" description="Patch all the other features">
         <!-- Prehandle incoming short message for Baidu -->
         <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/SMSDispatcher.smali" version="4.2" />
-        <revise action="ADD"   target="telephony-common.jar.out/smali/com/android/internal/telephony/SMSDispatcher$TrafficMonitorMessageReceiverClass.smali" version="4.2" />
         <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/telephony/SMSDispatcher.smali"          version="4.1|4.0" />
-        <revise action="ADD"   target="framework.jar.out/smali/com/android/internal/telephony/SMSDispatcher$baidu_1.smali"  version="4.1|4.0" />
+        <revise action="ADD"   target="telephony-common.jar.out/smali/com/android/internal/telephony/SMSDispatcher$TrafficMonitorMessageReceiverClass.smali" version="4.2"/>
+        <revise action="ADD"   target="framework.jar.out/smali/com/android/internal/telephony/SMSDispatcher$TrafficMonitorMessageReceiverClass.smali" version="4.0"/>
+        <revise action="ADD"   target="framework.jar.out/smali/com/android/internal/telephony/SMSDispatcher$baidu_1.smali"  version="4.1" />
         <!-- Optional. Prevent Junk SMS.
         <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/WapPushOverSms.smali" />
         -->
@@ -120,11 +121,11 @@
         <!-- Use flags to indicator results -->
         <revise action="MERGE" target="framework.jar.out/smali/android/content/Intent.smali" />
         <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityStack.smali" />
-        <revise action="ADD"   target="services.jar.out/smali/com/android/server/am/ActivityStack$baidu_1.smali" version="4.1|4.0" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/am/ActivityStack$baidu_1.smali" />
 
         <!-- Add back pad listener -->
         <revise action="MERGE" target="framework.jar.out/smali/android/app/Activity.smali" />
-        <revise action="ADD" target="framework.jar.out/smali/android/app/Activity$TouchPadListener.smali" />
+        <revise action="ADD"   target="framework.jar.out/smali/android/app/Activity$TouchPadListener.smali" />
 
         <!-- Baidu multitheme -->
         <revise action="ADD" target="framework.jar.out/smali/android/content/ThemeDefine.smali"/>
@@ -151,14 +152,15 @@
 
         <!-- Reboot -->
         <!-- Different 4.2/4.1/4.0 -->
-        <revise action="MERGE" target="services.jar.out/smali/com/android/server/power/ShutdownThread.smali"         version="4.2" />
-        <revise action="ADD"   target="services.jar.out/smali/com/android/server/power/ShutdownThread$baidu_0.smali" version="4.2" />
-        <revise action="ADD"   target="services.jar.out/smali/com/android/server/power/ShutdownThread$baidu_1.smali" version="4.2" />
-        <revise action="ADD"   target="services.jar.out/smali/com/android/server/power/ShutdownThread$baidu_2.smali" version="4.2" />
-        <revise action="MERGE" target="services.jar.out/smali/com/android/server/pm/ShutdownThread.smali"         version="4.1|4.0" />
-        <revise action="ADD"   target="services.jar.out/smali/com/android/server/pm/ShutdownThread$baidu_0.smali" version="4.1|4.0" />
-        <revise action="ADD"   target="services.jar.out/smali/com/android/server/pm/ShutdownThread$baidu_1.smali" version="4.1|4.0" />
-        <revise action="ADD"   target="services.jar.out/smali/com/android/server/pm/ShutdownThread$baidu_2.smali" version="4.1|4.0" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/power/ShutdownThread.smali"          version="4.2" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/power/ShutdownThread$baidu_0.smali"  version="4.2" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/power/ShutdownThread$baidu_1.smali"  version="4.2" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/power/ShutdownThread$baidu_2.smali"  version="4.2" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/pm/ShutdownThread.smali"             version="4.1" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/pm/ShutdownThread$baidu_0.smali"     version="4.1" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/pm/ShutdownThread$baidu_1.smali"     version="4.1" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/pm/ShutdownThread$baidu_2.smali"     version="4.1" />
+        <!-- WTF: Ignore 4.0 ShutdhowThread. -->
         <!-- Different 4.2/4.1/4.0 -->
 
         <!-- Refine change app icon and label in framework -->
