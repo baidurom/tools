@@ -115,11 +115,13 @@ class DiffPatch():
 
         action = Format.REMOVE_LINE | Format.ACCESS_TO_NAME | Format.RESID_TO_NAME
         self.mFormatTarget = Format(Config.PRJ_ROOT, self.mTarget).do(action)
-        Format(Config.OLDER_DIR, self.mOlder).do(action)
-        Format(Config.NEWER_DIR, self.mNewer).do(action)
+        self.mFormatOlder  = Format(Config.OLDER_DIR, self.mOlder).do(action)
+        self.mFormatNewer  = Format(Config.NEWER_DIR, self.mNewer).do(action)
 
     def clean(self):
         self.mFormatTarget.undo()
+        self.mFormatOlder.undo()
+        self.mFormatNewer.undo()
 
         for tmpDir in (DiffPatch.TARGET_OUT, DiffPatch.OLDER_OUT, DiffPatch.NEWER_OUT):
             shutil.rmtree(tmpDir)

@@ -126,7 +126,11 @@ class SAutoCom(object):
         if not SAutoCom.BLANK_ENTRY.has_key(entry.getType()) or entry.getType() != SmaliEntry.METHOD:
             Log.e("Doesn't support add blank %s in autocomplete")
             return
-        
+
+        dirName = os.path.dirname(outFilePath)
+        if not os.path.isdir(dirName):
+            os.makedirs(os.path.dirname(outFilePath))
+
         partSmali = Smali.Smali(outFilePath)
         nEntry = SmaliEntryFactory.newSmaliEntry(entry.getType(), SAutoCom.getBlankContent(entry), entry.getClassName(), entry.getPreContent())
         partSmali.replaceEntry(nEntry)
