@@ -23,8 +23,7 @@
                                patch ="revise-PackageManagerService.xml" />
 
         <!-- Load Baidu service -->
-        <revise action="MERGE" target="services.jar.out/smali/com/android/server/ServerThread.smali"
-                               patch ="revise-ServerThread.xml" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/ServerThread.smali" />
 
         <!-- Optimization for caller location and potograph -->
         <revise action="MERGE"   target="framework.jar.out/smali/com/android/internal/telephony/CallerInfo.smali" />
@@ -51,6 +50,7 @@
         <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/PhoneSubInfo.smali" version="4.2" />
         <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/telephony/IccCard.smali" version="4.1|4.0" />
         <revise action="MERGE" target="framework.jar.out/smali/com/android/internal/telephony/PhoneSubInfo.smali" version="4.1|4.0" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/telephony/MSimTelephonyManager.smali" version="4.1" />
 
         <!-- Missed method in CallManager -->
         <revise action="MERGE" target="telephony-common.jar.out/smali/com/android/internal/telephony/CallManager.smali"  version="4.2" />
