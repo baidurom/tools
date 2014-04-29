@@ -2,30 +2,37 @@
 import os
 import sys
 
-path = sys.argv[1]
-linkfile_path = path + '/SYSTEM/linkinfo.txt'
-#print linkfile_path
+linkfile = sys.argv[1]
+rootpath = sys.argv[2]
 
 try:
-    file_object = open(linkfile_path)
-    linelist = file_object.read( ).split()
+    file_object = open(linkfile)
+    linelist = file_object.read().split()
     for line in linelist:
         line = line.rstrip()
         filepath = line.split('|')
-        filepath[0] = filepath[0].replace('system', 'SYSTEM')
-        filepath[1] = filepath[1].replace('system', 'SYSTEM')
-        rm = 'rm -f ' + path+ '/' + filepath[0]
-        os.popen(rm)
-        dirname=os.path.dirname(filepath[0])
-        filepath[0] = os.path.basename(filepath[0])
-        filepath[1] = os.path.basename(filepath[1])
-        #ln = 'ln -s '+ path+ '/'+ filepath[1] + ' ' + path+ '/'+  filepath[0]
-        ln = 'cd ' + path + '/' + dirname + ';' + 'ln -s ' + filepath[1] + ' ' +  filepath[0]
-        #print ln
-        os.popen(ln)
+        if len(filepath) >= 2:
+            """ linkfile -> dstfile """
+            linkfile = filepath[0].replace('system', 'SYSTEM')
+            dstfile = filepath[1]
+            linkpath = os.path.join(rootpath, linkfile)
+            if (os.path.exists(linkpath)):
+                os.remove(linkpath)
+            linkdir=os.path.join(rootpath, os.path.dirname(linkfile))
+            linkname = os.path.basename(linkfile)
+            dstname = os.path.basename(dstfile)
+            if not (os.path.exists(linkdir)):
+                os.makedirs(linkdir)
+            if cmp(dstfile[0], "/") == 0: # use a absolute path
+                lncmd = "cd " + linkdir + "; " + "ln -sf " + dstfile + " " + linkname
+            else:
+                lncmd = "cd " + linkdir + "; " + "ln -sf " + dstname + " " + linkname
+            #print "lncmd: " + lncmd
+            os.popen(lncmd)
 except IOError:
-    print r"%s isn't exist" % linkfile_path
+    print r"%s isn't exist" % linkfile
     sys.exit(1)
+
 file_object.close( )
 print r"Recovery link files success"
 sys.exit(0)

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge>
+    <item action="ADD"
+          nearby=".method private scanPackageLI(Landroid/content/pm/PackageParser$Package;IIJLandroid/os/UserHandle;)Landroid/content/pm/PackageParser$Package;"
+          position="OVER"
+          anchor="\s+invoke-static/range {.*}, Lcom/android/server/pm/PackageManagerService;->isSystemApp.*\s+move-result .*\s+if-eqz .*, (.*)\s+invoke-static/range {.*}, Lcom/android/server/pm/PackageManagerService;->isUpdatedSystemApp"
+          match="REGEX">
+    goto %s
+    </item>
+</merge>
