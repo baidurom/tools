@@ -62,7 +62,7 @@ class Log:
             Log.i("  |                                                                                             ")
             Log.i("  |                                                                                             ")
             Log.i("  |     Advice:                                                                                 ")
-            Log.i("  |      1. Conflicts are marked out in the reject file with suffix .reject in out/reject/      ")
+            Log.i("  |      1. Conflicts are marked out in the reject files which are in out/reject/               ")
             Log.i("  |         you'd better resolve conflicts before going on with the following work.             ")
             Log.i("  |                                                                                             ")
             Log.i("  |      2. You might follow three steps to resolve conflicts:                                  ")
