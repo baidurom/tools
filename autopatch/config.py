@@ -91,7 +91,7 @@ class Config:
     @staticmethod
     def createReject(target):
         relTarget = os.path.relpath(target, Config.PRJ_ROOT)
-        rejFilename = os.path.join(Config.REJ_ROOT, relTarget + ".reject")
+        rejFilename = os.path.join(Config.REJ_ROOT, relTarget)
         dirname = os.path.dirname(rejFilename)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
