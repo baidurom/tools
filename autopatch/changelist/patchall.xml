@@ -35,6 +35,7 @@
         <revise action="MERGE" target="framework.jar.out/smali/android/os/Environment$UserEnvironment.smali" version="4.2" />
         <revise action="MERGE" target="services.jar.out/smali/com/android/server/MountService.smali" />
         <revise action="ADD"   target="services.jar.out/smali/com/android/server/MountService$SdType.smali" />
+        <revise action="ADD"   target="services.jar.out/smali/com/android/server/MountService$QuickbootBroadcastReceiver.smali" />
 
         <!-- Baidu widget extention class-->
         <revise action="ADD"   target="framework.jar.out/smali/android/util/FeatureData.smali"  />
