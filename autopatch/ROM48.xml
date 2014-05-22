@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<features>
+
+    <feature require="MUST" description="fix replace app label problem" >
+        <revise action="MERGE"   target="framework.jar.out/smali/android/content/pm/PackageItemInfo.smali" />
+        <revise action="MERGE"   target="framework.jar.out/smali/android/content/pm/ResolveInfo.smali" />
+        <revise action="REPLACE" target="framework.jar.out/smali/android/content/ThemeDefine.smali" />
+    </feature>
+
+    <feature require="MUST" description="kill orphaned process" >
+        <revise action="MERGE"   target="framework.jar.out/smali/android/os/Process.smali" />
+        <revise action="MERGE"   target="services.jar.out/smali/com/android/server/am/ActivityManagerService.smali" />
+    </feature>
+
+</features>
