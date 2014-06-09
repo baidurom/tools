@@ -19,8 +19,6 @@ from log import Log
 
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from smaliparser.Smali import Smali
-from accessmethod.name2num import NameToNumForOneFile
-from accessmethod.num2name import NumToNameForOneFile
 from format import Format
 
 

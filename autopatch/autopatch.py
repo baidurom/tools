@@ -23,6 +23,7 @@ from xml_patch import Patcher as XMLPatcher
 from target_finder import TargetFinder
 from config import Config
 from log import Log
+from format import Format
 
 try:
     import xml.etree.cElementTree as ET
@@ -190,7 +191,10 @@ class ReviseExecutor:
             Log.i(" ADD      " + target)
             self.createIfNotExist(os.path.dirname(target))
 
+        action = Format.REMOVE_LINE | Format.ACCESS_TO_NAME | Format.RESID_TO_NAME
+        formatTarget = Format(Config.NEWER_DIR, source).do(action)
         shutil.copy(source, target)
+        formatTarget.undo()
 
     def createIfNotExist(self, dirname):
         if not os.path.exists(dirname):
