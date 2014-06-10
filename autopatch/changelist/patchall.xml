@@ -62,6 +62,7 @@
         <revise action="MERGE" target="framework.jar.out/smali/android/app/ActivityManagerProxy.smali" />
         <revise action="MERGE" target="framework.jar.out/smali/android/app/IActivityManager.smali" />
         <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityManagerService.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/os/Process.smali" />
 
         <!-- Quick boot feature -->
         <revise action="REPLACE" target="services.jar.out/smali/com/android/server/am/QuickbootActivityManagerServiceHook*" />

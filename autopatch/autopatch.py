@@ -192,8 +192,10 @@ class ReviseExecutor:
             self.createIfNotExist(os.path.dirname(target))
 
         action = Format.REMOVE_LINE | Format.ACCESS_TO_NAME | Format.RESID_TO_NAME
-        formatTarget = Format(Config.NEWER_DIR, source).do(action)
+        formatSource = Format(Config.NEWER_DIR, source).do(action)
+        formatTarget = Format(Config.PRJ_ROOT, target).do(action)
         shutil.copy(source, target)
+        formatSource.undo()
         formatTarget.undo()
 
     def createIfNotExist(self, dirname):

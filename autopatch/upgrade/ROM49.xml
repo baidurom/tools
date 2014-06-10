@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<features>
+
+    <feature require="MUST" description="optimize memory usage." >
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/InputMethodManagerService.smali" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityStack.smali" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/power/ShutdownThread.smali" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/power/ShutdownThread$CloseDialogReceiver.smali" />
+        <revise action="MERGE" target="framework.jar.out/smali/android/content/res/AssetManager.smali" />
+        <revise action="MERGE" target="services.jar.out/smali/com/android/server/am/ActivityManagerService.smali" />
+    </feature>
+
+</features>
