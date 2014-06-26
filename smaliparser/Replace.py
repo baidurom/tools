@@ -46,7 +46,7 @@ class Replace(object):
                 utils.SLog.e("Can't get smali %s from vendor: %s"  %(smali.getClassName(), string.join(unImplementMethods)))
                 return (canReplaceEntryList, canNotReplaceEntryList)
             
-            unImplMethodEntryList = Replace.getEntryListByNameList(vSmali, SmaliEntry.METHOD, unImplementMethods)
+            unImplMethodEntryList = vSmali.getEntryListByNameList(SmaliEntry.METHOD, unImplementMethods)
             (canReplaceEntryList, canNotReplaceEntryList) = self.mMSLib.getCanReplaceEntry(self.mVSLib, smali.getClassName(), unImplMethodEntryList)
         
             for entry in canReplaceEntryList:

@@ -99,8 +99,7 @@ class SLog():
     def setSuccessStr(str):
         SLog.SUCCESS = str
         
-#PRJ_ROOT = os.getcwd()
-PRJ_ROOT = '/home/tangliuxiang/work/smali/smali-4.1/devices/n7108'
+PRJ_ROOT = os.getcwd()
 REJECT = '%s/out/reject' %(PRJ_ROOT)
 BOSP = '%s/autopatch/bosp' %(PRJ_ROOT)
 AOSP = '%s/autopatch/aosp' %(PRJ_ROOT)
@@ -138,7 +137,10 @@ def getSmaliPathList(source, smaliDirMaxDepth = 0):
     for root, dirs, files in os.walk(source):
         if smaliDirMaxDepth > 0:
             rootWithSuffix = "%s/" %root
-            idx = rootWithSuffix.rindex('/smali/')
+            try:
+                idx = rootWithSuffix.rindex('/smali/')
+            except:
+                idx = -1
             if idx < len(source) \
             or (idx > len(source) \
             and len(rootWithSuffix[len(source) + 1: idx].split('/')) > smaliDirMaxDepth):
