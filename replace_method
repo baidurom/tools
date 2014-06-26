@@ -25,9 +25,20 @@ function usage()
     echo "#"
 }
 
+function warning()
+{
+	echo "############# Warning ################"
+	echo "#"
+	echo "#  You better use 'methodtobosp' to replace method to bosp"
+	echo "#  methodtobosp will check whether the fields, methods which was used exist or not!"
+	echo "#"
+}
+
 if [ $# -lt 3 ]; then
     usage
     exit 1
 fi
 
 $SCHECK --replacemethod $@
+#warning
+

@@ -42,9 +42,9 @@ if [ -f $src ]; then
 	if [ x"$SU_PATH" != x ];then
 		adb push $src /data/local/tmp
 		if [[ $target == "/system/"* ]];then
-			echo "su -c \"mount -o remount,rw /system; cp /data/local/tmp/$src_basename $target;mount -o remount,ro /system\"; exit" | adb shell
+			echo "su -c \"mount -o remount,rw /system; cat /data/local/tmp/$src_basename > $target;mount -o remount,ro /system\"; exit" | adb shell
 		else
-			echo "su -c \"cp /data/local/tmp/$src_basename $target\"; exit" | adb shell
+			echo "su -c \"cat /data/local/tmp/$src_basename > $target\"; exit" | adb shell
 		fi
 else
 		echo "$src doesn't exist!"

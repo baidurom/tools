@@ -9,10 +9,9 @@ Created on 2012-12-11
 import re
 import sys
 import os
+import utils
 
 from SmaliEntry import SmaliEntry
-sys.path.append('%s/autopatch' %os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from log import Log
 
 INVOKE_DIRECT = "invoke-direct"
 INVOKE_INTERFACE = "invoke-interface"
@@ -63,7 +62,7 @@ class SmaliMethod(SmaliEntry):
                 invokeItem.belongCls = self.mClsName
             
                 invokeMethodsList.append(invokeItem)
-        return invokeMethodsList
+        return list(set(invokeMethodsList))
 
     def getInvokeMethods(self):
         if self.mInvokeMethods is None:
@@ -86,7 +85,7 @@ class SmaliMethod(SmaliEntry):
                 usedField.field = splitArrayNew[1]
             
                 usedFieldsList.append(usedField)
-        return usedFieldsList
+        return list(set(usedFieldsList))
     
     def getUsedFields(self):
         if self.mUsedFields is None:
@@ -108,11 +107,17 @@ class SmaliMethod(SmaliEntry):
 
     def getReturnType(self):
         return getReturnType(self.getName())
-
+    
+    def isConstructor(self):
+        return self.hasKey(utils.KEY_CONSTRUCTOR)
+    
+    def getSimpleName(self):
+        return self.getName().split('(')[0]
+    
 def getReturnType(methodName):
     splitArray = methodName.split(r')')
     if len(splitArray) < 2:
-        Log.w("method %s return nothing!" %methodName)
+        utils.SLog.w("method %s return nothing!" %methodName)
         return ""
     else:
         return splitArray[-1]

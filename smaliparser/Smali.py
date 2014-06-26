@@ -9,31 +9,9 @@ import re
 import SmaliEntry
 import hashlib
 import SmaliParser
+import utils
 
 from Content import Content
-
-KEY_INTERFACE = "interface"
-
-KEY_PUBLIC = "public"
-KEY_PRIVATE = "private"
-KEY_PROTECTED = "protected"
-KEY_STATIC = "static"
-KEY_FINAL = "final"
-KEY_SYNTHETIC = "synthetic"
-
-# only use in methods
-KEY_ABSTRACT = "abstract"
-KEY_CONSTRUCTOR = "constructor"
-KEY_BRIDGE = "bridge"
-KEY_DECLARED_SYNCHRONIZED = "declared-synchronized"
-KEY_NATIVE = "native"
-KEY_SYNCHRONIZED = "synchronized"
-KEY_VARARGS = "varargs"
-
-# only use in field
-KEY_ENUM = "enum"
-KEY_TRANSIENT = "transient"
-KEY_VOLATILE = "volatile"
 
 MAX_INVOKE_LEN = 5
 DEBUG = True
@@ -62,14 +40,18 @@ class Smali(object):
         self.mPackageName = None
         self.mUsedOutsideFields = None
         self.mUsedFields = None
-        self.mIsPartSmali = SmaliParser.isPartSmaliFile(smaliFilePath)
+        self.mMemberClasses = None
+        self.mIsPartSmali = utils.isPartSmaliFile(smaliFilePath)
+        self.mModifed = False
+        self.mDefaultOutPath = None
+        self.mPreOutPath = None
  
     def useField(self, name):
         pass
     
     def wasInvoke(self, invokeItem, check = False):
         if check and not self.checkInvokeType(invokeItem.method, invokeItem.type):
-            print ">>> Error: wrong invoke in class %s, method: %s, invoke method: %s, invoke type: %s" %(invokeItem.cls, invokeItem.belongMethod, invokeItem.method, invokeItem.type)
+            utils.SLog.e("wrong invoke in class %s, method: %s, invoke method: %s, invoke type: %s" %(invokeItem.cls, invokeItem.belongMethod, invokeItem.method, invokeItem.type))
             return False
         
         if not self.__mWasInvokedList.has_key(invokeItem.method):
@@ -98,7 +80,20 @@ class Smali(object):
             if ch == child:
                 return True
         return False
-        
+
+    def getMemberSmaliList(self):
+        if self.mMemberClasses is None:
+            self.mMemberClasses = []
+            clsBaseName = self.getClassBaseName()
+            memberClassRe = re.compile(r'(?:^%s\$.*%s$)' % (clsBaseName, utils.SMALI_POST_SUFFIX))
+            dirName = os.path.dirname(self.getPath())
+            
+            for root, dirs, files in os.walk(dirName):
+                for fn in files:
+                    if bool(memberClassRe.match(fn)):
+                        self.mMemberClasses.append(Smali('%s/%s' % (dirName, fn)))
+        return self.mMemberClasses
+
     def getEntryList(self, type = None, filterInList = None, filterOutList = None, maxSize=0):
         entryList = self.mParser.getEntryList()
         if type is None:
@@ -140,19 +135,28 @@ class Smali(object):
             outEntryList.append(entry.getName())
         return outEntryList
     
+    def getEntryListByNameList(self, type, nameList):
+        outList = []
+        for entry in self.getEntryList(type):
+            for name in nameList:
+                if name == entry.getName():
+                    outList.append(entry)
+                    break
+        return outList
+    
     def getMethodsNameList(self, filterInList = None, filterOutList = None):
         return self.getEntryNameList(SmaliEntry.METHOD, filterInList, filterOutList)
     
     def getAbstractMethodsNameList(self):
-        return self.getMethodsNameList([KEY_ABSTRACT])
+        return self.getMethodsNameList([utils.KEY_ABSTRACT])
     
     def isAbstractClass(self):
-        entryList = self.getEntryList(SmaliEntry.CLASS, [KEY_ABSTRACT])
+        entryList = self.getEntryList(SmaliEntry.CLASS, [utils.KEY_ABSTRACT])
         assert len(entryList) <= 1, "Error: should has only one class define"
         return len(entryList) == 1
     
     def isInterface(self):
-        entryList = self.getEntryList(SmaliEntry.CLASS, [KEY_INTERFACE])
+        entryList = self.getEntryList(SmaliEntry.CLASS, [utils.KEY_INTERFACE])
         assert len(entryList) <= 1, "Error: should has only one class define"
         return len(entryList) == 1
     
@@ -164,9 +168,9 @@ class Smali(object):
                 self.mSuperClassName = entryList[0].getName()
             else:
                 # java/lang/Object doesn't have super
-                if SmaliParser.getClassFromPath(self.mPath) != DEFAULT_SUPER:
+                if utils.getClassFromPath(self.mPath) != DEFAULT_SUPER:
                     if not self.mIsPartSmali:
-                        print "Wrong smali, should define the super! (%s)" % (self.mPath)
+                        utils.SLog.w("Wrong smali, should define the super! (%s)" % (self.mPath))
                     self.mSuperClassName = DEFAULT_SUPER
                 else:
                     self.mSuperClassName = None
@@ -203,11 +207,36 @@ class Smali(object):
     def removeEntry(self, entry):
         return self.mParser.removeEntry(entry)
     
-    def addEntry(self, entry):
-        return self.mParser.addEntry(entry)
-
-    def replaceEntry(self, entry):
-        return self.mParser.replaceEntry(entry)
+    def addEntry(self, entry, idx = -1, preFlag = None):
+        nEntry = entry.clone()
+        if preFlag is not None:
+            nPreContent = nEntry.getPreContent()
+            if nPreContent is None:
+                nPreContent = Content(preFlag)
+                nEntry.setPreContent(nPreContent)
+            else:
+                nPreContent.append(preFlag)
+        
+        result = self.mParser.addEntry(nEntry, idx)
+        self.mModifed = True
+        return result
+    
+    def getIndex(self, entry):
+        return self.mParser.getIndex(entry)
+    
+    def replaceEntry(self, entry, preFlag = None):
+        nEntry = entry.clone()
+        if preFlag is not None:
+            nPreContent = nEntry.getPreContent()
+            if nPreContent is None:
+                nPreContent = Content(preFlag)
+                nEntry.setPreContent(nPreContent)
+            else:
+                nPreContent.append(preFlag)
+        
+        result = self.mParser.replaceEntry(nEntry)
+        self.mModifed = True
+        return result
 
     def getClassName(self):
         if self.mClassName is None:
@@ -215,14 +244,14 @@ class Smali(object):
 
             if len(entryList) != 1:
                 if not self.mIsPartSmali:
-                    print "Warning: should has only one class define! (%s)" %(self.mPath)
-                self.mClassName = SmaliParser.getClassFromPath(self.getPath())
+                    utils.SLog.w("should has only one class define! (%s)" %(self.mPath))
+                self.mClassName = utils.getClassFromPath(self.getPath())
             else:
                 self.mClassName = entryList[0].getName()
         return self.mClassName
     
     def getClassBaseName(self):
-        return SmaliParser.getClassBaseNameFromPath(self.getPath())
+        return utils.getClassBaseNameFromPath(self.getPath())
     
     def getSourceName(self):
         if self.mSourceName is None:
@@ -233,11 +262,11 @@ class Smali(object):
         return self.mSourceName
     
     def getJarName(self):
-        return SmaliParser.getJarNameFromPath(self.getPath())
+        return utils.getJarNameFromPath(self.getPath())
     
     def getPackageName(self):
         if self.mPackageName is None:
-            self.mPackageName = SmaliParser.getPackageFromClass(self.getClassName())
+            self.mPackageName = utils.getPackageFromClass(self.getClassName())
             
         return self.mPackageName;
     
@@ -322,7 +351,7 @@ class Smali(object):
 
         sName = os.path.basename(self.mPath)[:-6]
 
-        if False: print ">>> begin split file: %s to %s" %(self.mPath, outdir)
+        utils.SLog.d(">>> begin split file: %s to %s" %(self.mPath, outdir))
 
         partList = []
 
@@ -353,10 +382,41 @@ class Smali(object):
             if entry.format(formatMap):
                 modified = True
         return modified
+    
+    def isModifed(self):
+        return self.mModifed
+    
+    def modify(self):
+        self.mModifed = True
+        
+    def cleanModify(self):
+        self.mModifed = False
+    
+    def setDefaultOutPath(self, outPath):
+        self.mDefaultOutPath = outPath
+        self.modify()
+        
+    def getDefaultOutPath(self):
+        if self.mDefaultOutPath == None:
+            return self.getPath()
+        else:
+            return self.mDefaultOutPath
 
     def out(self, outPath = None):
         if outPath is None:
-            outPath = self.getPath()
+            outPath = self.getDefaultOutPath()
+            
+        if self.mPreOutPath == outPath and self.mModifed == False:
+            return
+        
+        self.mPreOutPath = outPath
+        self.mModifed = False
+        utils.SLog.d("out to : %s" %outPath)
+        
+        dirName = os.path.dirname(outPath)
+        if not os.path.isdir(dirName):
+            os.makedirs(os.path.dirname(outPath))
+
         sFile = file(outPath, "w+")
 
         outStr = self.toString()

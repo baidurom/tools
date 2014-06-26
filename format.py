@@ -46,7 +46,7 @@ from accessmethod.name2num import NameToNumForOneFile
 from accessmethod.num2name import NumToNameForOneFile
 from idtoname import idtoname
 from nametoid import nametoid
-from smaliparser import SmaliParser,SmaliLib
+from smaliparser import utils
 
 
 class Format():
@@ -74,7 +74,6 @@ class Format():
         self.mRoot = root
         self.mSmaliFile = smaliFile
         
-        #self.msmaliLib = SmaliLib.SmaliLib.getSmaliLib(root)
         self.mPublicXML = os.path.join(self.mRoot, Format.RELATIVE_PUBLIC_XML)
         self.mAction = None
         self.mLinePatch = None
@@ -146,7 +145,7 @@ class Format():
     @staticmethod
     # format the used fields
     def formUsingField(sLib, smaliFile):
-        clsName = SmaliParser.getClassFromPath(smaliFile)
+        clsName = utils.getClassFromPath(smaliFile)
         cSmali = sLib.getSmali(clsName)
         sLib.format(cSmali)
 
@@ -209,12 +208,12 @@ class Format():
     @staticmethod
     def format(job, libPath, smaliFileList = None, action = ALL_ACTION):
         if smaliFileList is None:
-            smaliFileList = SmaliParser.getSmaliPathList(libPath)
+            smaliFileList = utils.getSmaliPathList(libPath)
 
         idx = 0
         while idx < len(smaliFileList):
             if os.path.isdir(smaliFileList[idx]):
-                Format.format(job, libPath, SmaliParser.getSmaliPathList(libPath), action)
+                Format.format(job, libPath, utils.getSmaliPathList(libPath), action)
                 continue
             
             f = Format(libPath, smaliFileList[idx])

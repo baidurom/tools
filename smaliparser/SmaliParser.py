@@ -11,16 +11,9 @@ import re
 import utils
 import sys
 
-sys.path.append('%s/autopatch' %os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from log import Log
-
-
 from Content import Content
 from SmaliLine import SmaliLine
 
-SMALI_POST_SUFFIX = r'\.smali'
-PART_SMALI_POST_SUFFIX = r'\.smali\.part'
-SMALI_POST_SUFFIX_LEN = 6
 DEBUG = False
 
 class SmaliParser(object):
@@ -44,7 +37,7 @@ class SmaliParser(object):
             self.parse()
             
     def parse(self):
-        clsName = getClassFromPath(self.mSmaliFilePath)
+        clsName = utils.getClassFromPath(self.mSmaliFilePath)
         state = SmaliParser.STATE_WAIT_START;
         curEntryType = None
         curEntryContent = Content()
@@ -52,7 +45,7 @@ class SmaliParser(object):
         entryList = []
         
         if not os.path.isfile(self.mSmaliFilePath):
-            Log.d("Warning: %s doesn't exist!" %(self.mSmaliFilePath))
+            utils.SLog.w("%s doesn't exist!" %(self.mSmaliFilePath))
             self.mParsed = True
             return
         
@@ -133,23 +126,34 @@ class SmaliParser(object):
             idx = idx + 1
         return False
     
-    def addEntry(self, entry):
+    def addEntry(self, entry, idx = -1):
         if self.mParsed is False:
             self.parse()
         
         if entry is None:
             return False
         
-        self.mEntryList.append(entry)
+        if idx < 0 or idx >= len(self.mEntryList):
+            self.mEntryList.append(entry)
+        else:
+            self.mEntryList.append(self.mEntryList[len(self.mEntryList) - 1])
+            i = len(self.mEntryList) - 1
+            while i > idx:
+                self.mEntryList[i] = self.mEntryList[i - 1]
+                i = i - 1
+            self.mEntryList[idx] = entry
         return True
-
+    
+    def getIndex(self, entry):
+        return self.mEntryList.index(entry)
+    
     def replaceEntry(self, entry):
         if self.mParsed is False:
             self.parse()
 
         if entry is None:
             return False
-
+        
         idx = 0
         while idx < len(self.mEntryList):
             if self.mEntryList[idx].equals(entry):
@@ -159,88 +163,5 @@ class SmaliParser(object):
 
         self.addEntry(entry)
         return True
-
-
-smaliFileRe = re.compile(r'(?:^.*%s$)|(?:^.*%s$)' % (SMALI_POST_SUFFIX, PART_SMALI_POST_SUFFIX))
-partSmaliFileRe = re.compile(r'(?:^.*%s$)' %(PART_SMALI_POST_SUFFIX))
-def isSmaliFile(smaliPath):
-    return bool(smaliFileRe.match(smaliPath))
-
-def isPartSmaliFile(smaliPath):
-    return bool(partSmaliFileRe.match(smaliPath))
-
-def getSmaliPathList(source):
-    filelist = []
-    
-    source = os.path.abspath(source)
-    if os.path.isfile(source):
-        if isSmaliFile(source):
-            filelist.append(source)
-        return filelist
-    
-    for root, dirs, files in os.walk(source):
-        for fn in files:
-            if isSmaliFile(fn):
-                filelist.append("%s/%s" % (root, fn))
-
-    return filelist
-
-def getPackageFromClass(className):
-    try:
-        idx = className.rindex(r'/')
-    except:
-        print "Error: wrong className: %s" %className
-        return None
-    return className[1:idx]
-
-def __shouldFilter(filterOutDirList, sPath):
-    if filterOutDirList is None:
-        return False
-    for dir in filterOutDirList:
-        try:
-            if sPath.index(dir) == 0:
-                if DEBUG:
-                    print ">>> filter path: %s" %sPath
-                return True
-        except:
-            pass
-    return False
-
-def getSmaliDict(smaliDir, filterOutDirList = None):
-    sFileList = getSmaliPathList(smaliDir)
-    smaliDict = {}
-    
-    for sPath in sFileList:
-        if not __shouldFilter(filterOutDirList, sPath):
-            smali = Smali.Smali(sPath)
-            sClass = getClassFromPath(sPath)
-            smaliDict[sClass] = smali
-       
-    return smaliDict
-
-def getJarNameFromPath(smaliPath):
-    assert isSmaliFile(smaliPath), "This file is not smali file: %s" % smaliPath
-
-    absSmaliPath = os.path.abspath(smaliPath)
-    splitArray = absSmaliPath.split("/smali/")
-
-    assert len(splitArray) >= 2, "This smali is not decode by apktool, doesn't hava /smali/ directory"
-    return os.path.basename(splitArray[len(splitArray) - 2])
-
-def getClassBaseNameFromPath(smaliPath):
-    assert isSmaliFile(smaliPath), "This file is not smali file: %s" % smaliPath
-    sBaseName = os.path.basename(smaliPath)
-    return sBaseName[:sBaseName.rindex('.smali')]
-        
-def getClassFromPath(smaliPath):
-    assert isSmaliFile(smaliPath), "This file is not smali file: %s" % smaliPath
-    
-    absSmaliPath = os.path.abspath(smaliPath)
-    splitArray = absSmaliPath.split("/smali/")
-    
-    assert len(splitArray) >= 2, "This smali is not decode by apktool, doesn't hava /smali/ directory"
-    clsNameWithPost = splitArray[len(splitArray) - 1]
-    return 'L%s;' % clsNameWithPost[:clsNameWithPost.rindex('.smali')]
-
 
 

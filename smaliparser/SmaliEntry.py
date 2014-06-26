@@ -32,6 +32,26 @@ class SmaliEntry(object):
         self.mName = None
         self.mClsName = clsName
         
+        self.mFlag = 0
+        
+    def clone(self):
+        nPreContent = None
+        if self.getPreContent() is not None:
+            nPreContent = self.getPreContent().clone() 
+        return SmaliEntry(self.getType(), self.getContent().clone(), self.getClassName(), nPreContent)
+        
+    def addFlag(self, flag):
+        self.mFlag = self.mFlag | flag
+    
+    def rmFlag(self, flag):
+        self.mFlag = self.mFlag &(~flag)
+
+    def setFlag(self, flag):
+        self.mFlag = flag
+        
+    def getFlag(self):
+        return self.mFlag
+        
     def setClassName(self, clsName):
         self.mClsName = clsName
         

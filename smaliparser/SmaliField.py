@@ -14,5 +14,6 @@ class SmaliField(SmaliEntry.SmaliEntry):
         if self.mName is None:
             firstLine = self.getContent().getFirstLine()
             splitArray = firstLine.split(r'=')[0].split()
+            #self.mName = splitArray[len(splitArray) - 1].split(r':')[0]
             self.mName = splitArray[len(splitArray) - 1]
         return self.mName

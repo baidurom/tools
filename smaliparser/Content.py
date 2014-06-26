@@ -14,6 +14,9 @@ class Content(object):
             self.ContentStr = "%s\n%s" %(self.ContentStr, contentStr)
         else:
             self.ContentStr = contentStr
+    
+    def clone(self):
+        return Content(self.getContentStr())
             
     def getContentStr(self):
         return self.ContentStr

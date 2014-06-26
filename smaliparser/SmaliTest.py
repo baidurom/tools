@@ -13,6 +13,7 @@ import SmaliLib
 import string
 import SCheck
 import SmaliEntry
+import utils
 
 class SmaliTest(object):
     '''
@@ -211,7 +212,7 @@ def testSCheckGetUnImplementMethods(vendorDir, aosp, bosp, mergedDir):
     
             
 def testSmaliGetSmaliPathList(smaliDir):
-    smaliDict = SmaliParser.getSmaliDict(smaliDir)
+    smaliDict = utils.getSmaliDict(smaliDir)
     for key in smaliDict.keys():
         print "key: %s, file: %s" %(key, smaliDict[key].mPath)
         
