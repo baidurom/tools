@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<features>
+
+    <feature require="MUST" description="adjust rules of loading theme res." >
+        <revise action="ADD" target="framework.jar.out/smali/android/content/ThemeDefine.smali" />
+    </feature>
+
+</features>
