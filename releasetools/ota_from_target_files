@@ -432,7 +432,7 @@ def WriteFullOTAPackage(input_zip, output_zip):
 
   AppendAssertions(script, input_zip)
   device_specific.FullOTA_Assertions()
-
+  script.Print("*Welcome Flash Baidu Yun Rom*")
   script.ShowProgress(0.5, 0)
 
   if OPTIONS.wipe_user_data:
@@ -504,8 +504,9 @@ def WriteFullOTAPackage(input_zip, output_zip):
   script.Mount("/data")
   script.UnpackPackageDir("data", "/data")
   script.SetPermissionsRecursive("/data/app", 1000, 1000, 0755, 0644)
-
   script.UnmountAll()
+  script.Print("All install update done...")
+  script.Print("Please restart your phone...")
   script.AddToZip(input_zip, output_zip)
   WriteMetadata(metadata, output_zip)
 
