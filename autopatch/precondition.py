@@ -30,7 +30,7 @@ except KeyError:
     DEVICE_BASE = os.curdir
 
 FRAMEWORK_JARS = ("framework.jar", "services.jar", "telephony-common.jar",
-                  "secondary-framework.jar", "secondary_framework.jar", "framework2.jar.out",
+                  "secondary-framework.jar", "secondary_framework.jar", "framework2.jar",
                   "mediatek-framework.jar", "framework-ext.jar",
                   "android.policy.jar",
                   "pm.jar")
