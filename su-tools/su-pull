@@ -1,0 +1,51 @@
+#!/bin/bash
+
+prog="$0"
+while [ -h "${prog}" ]; do
+    newProg=`/bin/ls -ld "${prog}"`
+    #echo ${newProg}
+
+    newProg=`expr "${newProg}" : ".* -> \(.*\)$"`
+    if expr "x${newProg}" : 'x/' >/dev/null; then
+        prog="${newProg}"
+    else
+        progdir=`dirname "${prog}"`
+        prog="${progdir}/${newProg}"
+    fi
+done
+oldwd=`pwd`
+progdir=`dirname "${prog}"`
+cd "${progdir}"
+progdir=`pwd`
+prog="${progdir}"/`basename "${prog}"`
+cd "${oldwd}"
+
+src=$1
+target=$2
+
+src_basename=`basename $src`
+CHECK_SU=$progdir/check-su
+pcp=$progdir/phone-cp
+ptmp_su_push=/data/local/tmp/su_push
+phone_cp=/data/local/tmp/phone-cp
+
+if [ x"$target" == x ];then
+	target=$PWD/$src_basename
+fi
+
+adb wait-for-device
+
+$CHECK_SU
+if [ $? != 0 ]; then
+	echo "Error: failed to pull $src to $target"
+	echo "     You better make sure you have an correct su, you can run check-su to test if su is ok"
+	exit 1
+fi
+
+adb push $pcp $phone_cp
+adb shell chmod 777 $phone_cp
+
+echo "begin copy $src to /sdcard/su-pull-tmp/$src_basename"
+echo "su -c \"rm -rf /sdcard/su-pull-tmp; mkdir -p /sdcard/su-pull-tmp; $phone_cp $src /sdcard/su-pull-tmp/$src_basename; chmod 777 /sdcard/su-pull-tmp/$src_basename\"; exit" | adb shell
+adb pull /sdcard/su-pull-tmp/$src_basename $target
+echo "su -c \"rm -rf /sdcard/su-pull-tmp\"; exit" | adb shell

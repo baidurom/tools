@@ -1,29 +1,39 @@
 #!/usr/bin/python
 # Filename: autopatch.py
 
-### File Information ###
 """
 Patch the files automatically based on the autopatch.xsd.
 
-Usage: $shell autopatch.py [PATCH_XML]
-            - PATCH_XML  : The patch XML definition. Default to be bringup.xml
+Usage: $autopatch.py [OPTIONS]
+              OPTIONS:
+                --patchall, -p : Patch all the changes
+                --upgrade,  -u : Patch the upgrade changes
+                --porting,  -t : Porting changes from the other device
+
+                Loosely, make sure you have prepared the autopatch directory by your self
+                --patchall-loose, -pl : Patch all the changes loosely, not update AOSP and BOSP again
+                --upgrade-loose,  -ul : Patch all the changes loosely, not update LAST_BOSP and BOSP again
 """
 
-__author__ = 'duanqizhi01@baidu.com (duanqz)'
+__author__ = 'duanqz@gmail.com'
 
 
 
-import os.path
 import shutil
-import sys
+import os, sys
 import fnmatch
 import traceback
+
 from diff_patch import DiffPatch
-from xml_patch import Patcher as XMLPatcher
 from target_finder import TargetFinder
 from config import Config
-from log import Log
-from format import Format
+from error import Error
+from rejector import Rejector
+from precondition import preparePatchall, prepareUpgrade, preparePorting
+
+from formatters.format import Format
+from formatters.log import Paint
+
 
 try:
     import xml.etree.cElementTree as ET
@@ -31,63 +41,27 @@ except ImportError:
     import xml.etree.ElementTree as ET
 
 
+TAG="autopatch"
+
 
 class AutoPatch:
 
-    def __init__(self):
 
+    def __init__(self, targetRoot, olderRoot, newerRoot, patchXML):
+        AutoPatch.TARGET_ROOT = targetRoot
+        AutoPatch.OLDER_ROOT  = olderRoot
+        AutoPatch.NEWER_ROOT  = newerRoot
+        AutoPatch.PATCH_XML   = patchXML
+
+
+    def run(self):
         # Parse out the PATCH_XML
         AutoPatchXML().parse()
 
-        Log.conclude()
+        Error.report()
 
 # End of class AutoPatch
 
-
-class Version:
-    """ Version control for file
-    """
-
-    ANDROID_4_0 = 1
-    ANDROID_4_1 = ANDROID_4_0 << 1
-    ANDROID_4_2 = ANDROID_4_1 << 1
-    ANDROID_4_3 = ANDROID_4_2 << 1
-    ANDROID_4_4 = ANDROID_4_3 << 1
-
-
-    CURRENT_VERSION = ~0
-
-    @staticmethod
-    def parseCurrentVersion(patchXML):
-        """ Parse out current version from the patch XML
-        """
-
-        try:
-            Version.CURRENT_VERSION = Version.parse(patchXML.getroot().attrib['version'])
-        except KeyError:
-            pass
-
-    @staticmethod
-    def parse(versionStr):
-        versionInt = 0
-        for version in versionStr.split("|"):
-            if version == "4.0" : versionInt |= Version.ANDROID_4_0
-            if version == "4.1" : versionInt |= Version.ANDROID_4_1
-            if version == "4.2" : versionInt |= Version.ANDROID_4_2
-            if version == "4.3" : versionInt |= Version.ANDROID_4_3
-            if version == "4.4" : versionInt |= Version.ANDROID_4_4
-
-        Log.d("Version is %d" % versionInt);
-        return versionInt
-
-    @staticmethod
-    def match(versionStr):
-        if versionStr != None:
-            version = Version.parse(versionStr)
-        else:
-            version = Version.CURRENT_VERSION
-
-        return Version.CURRENT_VERSION & version
 
 class AutoPatchXML:
     """ Represent the tree model of the patch XML.
@@ -97,31 +71,21 @@ class AutoPatchXML:
         """ Parse the XML with the schema defined in autopatch.xsd
         """
 
-        XMLDom = ET.parse(Config.PATCH_XML)
-
-        Version.parseCurrentVersion(XMLDom)
+        XMLDom = ET.parse(AutoPatch.PATCH_XML)
 
         for feature in XMLDom.findall('feature'):
             self.handleRevise(feature)
+
 
     def handleRevise(self, feature):
         """ Parse the revise node to handle the revise action.
         """
 
-        require = feature.attrib['require']
         description = feature.attrib['description']
 
-        if self.needRevise(require):
-            Log.i("\n [%s]" % description)
-            for revise in feature:
-                ReviseExecutor(revise).run()
-
-    def needRevise(self, require):
-        if   require == "MUST"   : require = Config.MUST
-        elif require == "OPTION" : require = Config.OPTION
-        elif require == "IGNORE" : require = Config.IGNORE
-
-        return require & Config.REQUIRE
+        print "\n [%s]" % description
+        for revise in feature:
+            ReviseExecutor(revise).run()
 
 # End of class AutoPatchXML
 
@@ -133,122 +97,214 @@ class ReviseExecutor:
 
     ADD     = "ADD"
     MERGE   = "MERGE"
+    DELETE  = "DELETE"
     REPLACE = "REPLACE"
 
     def __init__(self, revise):
         """ @args revise: the revise XML node.
         """
 
+        self.targetFiner = TargetFinder()
+
         self.action = revise.attrib['action']
 
         # Compose the source and target file path
         target = revise.attrib['target']
-        self.mOldSrc = os.path.join(Config.OLDER_DIR, target)
-        self.mNewSrc = os.path.join(Config.NEWER_DIR, target)
-        self.mTarget = TargetFinder().find(target)
-
-        # Initialize patch if defined
-        try: 
-            patch = revise.attrib['patch']
-            self.mPatch = os.path.join(Config.PATCH_XML_DIR, patch)
-        except KeyError:
-            self.mPatch = None
-
-        # Initialize version if defined
-        try:
-            self.mVersion = revise.attrib['version']
-        except KeyError:
-            self.mVersion = None
+        self.mTarget = target
+        self.mOlder  = os.path.join(AutoPatch.OLDER_ROOT,  target)
+        self.mNewer  = os.path.join(AutoPatch.NEWER_ROOT,  target)
 
 
     def run(self):
-        if Version.match(self.mVersion) == False:
-            return
+        if   os.path.isfile(self.mNewer) or os.path.isfile(self.mOlder):
+            self.singleAction(self.mTarget, self.mOlder, self.mNewer)
+
+        elif os.path.isdir(self.mNewer): self.handleDirectory(self.mNewer)
+        elif os.path.isdir(self.mOlder): self.handleDirectory(self.mOlder)
+
+        elif self.mNewer.endswith("*"): self.handleRegex(self.mNewer)
+        elif self.mOlder.endswith("*"): self.handleRegex(self.mOlder)
+
+        else:
+            print Paint.red("  Can not handle : %s" % self.mTarget)
+
+
+    def handleDirectory(self, directory):
+        """ Handle target is a directory
+        """
+
+        if   directory.startswith(AutoPatch.OLDER_ROOT):
+            relpathStart = AutoPatch.OLDER_ROOT
+        elif directory.startswith(AutoPatch.NEWER_ROOT):
+            relpathStart = AutoPatch.NEWER_ROOT
+
+        for (dirpath, dirnames, filenames) in os.walk(directory):
+
+            dirnames = dirnames # No use, just avoid of warning
+
+            for filename in filenames:
+                path =  os.path.join(dirpath, filename)
+
+                target = os.path.relpath(path, relpathStart)
+                older  = os.path.join(AutoPatch.OLDER_ROOT,  target)
+                newer  = os.path.join(AutoPatch.NEWER_ROOT,  target)
+
+                self.singleAction(target, older, newer)
+
+
+    def handleRegex(self, regex):
+        """ Handle target ends with *
+        """
+
+        targetdir = os.path.dirname(self.mTarget)
+        olderdir  = os.path.dirname(self.mOlder)
+        newerdir  = os.path.dirname(self.mNewer)
+
+        regexdir = os.path.dirname(regex)
+        regexbase = os.path.basename(regex)
+
+        # Match the filename in the directory
+        for filename in os.listdir(regexdir):
+            if fnmatch.fnmatch(filename, regexbase):
+                target = os.path.join(targetdir, filename)
+                older  = os.path.join(olderdir,  filename)
+                newer  = os.path.join(newerdir,  filename)
+
+                self.singleAction(target, older, newer)
+
+
+    def singleAction(self, target, older, newer):
+        """ action for a single file
+        """
+
+        # Find the actually target
+        target = self.targetFiner.find(target)
 
         try:
-            if   self.action == ReviseExecutor.ADD:     self.add()
-            elif self.action == ReviseExecutor.REPLACE: self.replace()
-            elif self.action == ReviseExecutor.MERGE:   self.merge()
+            if   self.action == ReviseExecutor.ADD:     result = ReviseExecutor.singleReplaceOrAdd(target, newer)
+            elif self.action == ReviseExecutor.MERGE:   result = ReviseExecutor.singleMerge(target, older, newer)
+            elif self.action == ReviseExecutor.DELETE:  result = ReviseExecutor.singleDelete(target)
+            elif self.action == ReviseExecutor.REPLACE: result = ReviseExecutor.singleReplaceOrAdd(target, newer)
+
+            print result
         except:
-            Log.fail("Failed to " + self.action + "  " + self.mTarget)
+            Error.fail("  * Failed to %s  %s" % (self.action, target))
             traceback.print_exc()
 
-    def add(self):
-        self.replaceOrAddSingleFile(self.mNewSrc, self.mTarget)
 
-    def replaceOrAddSingleFile(self, source, target):
+    @staticmethod
+    def singleReplaceOrAdd(target, source):
         """ Add a file from source to target.
             Replace the target if exist.
         """
 
-        if not os.path.exists(source):
-            Log.fail("File not exist: " + source)
-            return
 
         if os.path.exists(target):
-            Log.i(" REPLACE  " + target)
+            execute = "REPLACE  " + target
         else:
-            Log.i(" ADD      " + target)
-            self.createIfNotExist(os.path.dirname(target))
+            execute = "    ADD  " + target
+            ReviseExecutor.createIfNotExist(os.path.dirname(target))
+
+        if not os.path.exists(source):
+            Error.fileNotFound(source)
+
+            return "%s %s" % (Paint.red("  [FAIL]"), execute)
+
+        # Only format access method and res id
+        action = Format.ACCESS_TO_NAME | Format.RESID_TO_NAME
+        formatSource = Format(AutoPatch.NEWER_ROOT, source).do(action)
+        formatTarget = Format(AutoPatch.TARGET_ROOT, target).do(action)
+
+        shutil.copy(source, target)
+
+        # Would not change res name back
+        action = Format.ACCESS_TO_NAME
+        formatSource.undo(action)
+        formatTarget.undo(action)
+
+        return "%s %s" % (Paint.green("  [PASS]"), execute)
+
+
+    @staticmethod
+    def singleMerge(target, older, newer):
+        execute = "  MERGE  " + target
+
+        if not os.path.exists(target) :
+            Error.fileNotFound(target)
+            return "%s %s" % (Paint.red("  [FAIL]"), execute)
 
         action = Format.REMOVE_LINE | Format.ACCESS_TO_NAME | Format.RESID_TO_NAME
-        formatSource = Format(Config.NEWER_DIR, source).do(action)
-        formatTarget = Format(Config.PRJ_ROOT, target).do(action)
-        shutil.copy(source, target)
-        formatSource.undo()
-        formatTarget.undo()
+        formatTarget = Format(AutoPatch.TARGET_ROOT, target).do(action)
+        formatOlder  = Format(AutoPatch.OLDER_ROOT,  older).do(action)
+        formatNewer  = Format(AutoPatch.NEWER_ROOT,  newer).do(action)
 
-    def createIfNotExist(self, dirname):
+        DiffPatch(target, older, newer).run()
+
+        # Would not change res name back
+        action = Format.REMOVE_LINE | Format.ACCESS_TO_NAME
+        formatTarget.undo(action)
+        formatOlder.undo(action)
+        formatNewer.undo(action)
+
+        conflictNum = Rejector(target).getConflictNum()
+
+        if conflictNum > 0 :
+            Error.conflict(conflictNum, target)
+            return "%s %s" % (Paint.yellow("  [CFLT]"), execute)
+        else:
+            return "%s %s" % (Paint.green("  [PASS]"), execute)
+
+
+    @staticmethod
+    def singleDelete(target):
+        execute = " DELETE  " + target
+
+        if os.path.exists(target):
+            os.remove(target)
+            return "%s %s" % (Paint.green("  [PASS]"), execute)
+
+        return "%s %s" % (Paint.red("  [FAIL]"), execute)
+
+
+    @staticmethod
+    def createIfNotExist(dirname):
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
-    def replace(self):
-        if self.mNewSrc.endswith("*") :
-            # Replace all the files match the prefix
-
-            # List all the file in directory
-            sourcedir = os.path.dirname(self.mNewSrc)
-            basename = os.path.basename(self.mNewSrc)
-
-            targetdir = os.path.dirname(self.mTarget)
-            # Match the filename in the directory
-            for filename in os.listdir(sourcedir):
-                if fnmatch.fnmatch(filename, basename):
-                    source = os.path.join(sourcedir, filename)
-                    target = os.path.join(targetdir, filename)
-
-                    newTarget = TargetFinder().find(target)
-                    self.replaceOrAddSingleFile(source, newTarget)
-        else:
-            self.add()
-
-    def merge(self): 
-        if not os.path.exists(self.mTarget):
-            Log.fail("File not exist: " + self.mTarget)
-            return
-
-        Log.i(" MERGE    " + self.mTarget)
-
-        if self.mPatch == None:
-            # Compare OLDER and NEWER, then patch onto target.
-            if not DiffPatch(self.mTarget, self.mOldSrc, self.mNewSrc).run():
-                # Collect the reject file of target
-                Log.reject(self.mTarget)
-                pass
-
-        elif os.path.exists(self.mPatch):
-            # Directly patch onto target by patch defined
-            if not XMLPatcher(self.mTarget, self.mPatch).run():
-                Log.reject(self.mTarget)
-                pass
-        else:
-            Log.fail("Patch not exists " + self.mPatch)
 
 # End of class ReviseExecutor
 
 
-# End of class Log
+def patchall(loose=False):
+    if not loose: preparePatchall()
+
+    AutoPatch(Config.PRJ_ROOT, Config.AOSP_ROOT, Config.BOSP_ROOT, Config.PATCHALL_XML).run()
+
+
+def upgrade(loose=False):
+    if not loose: prepareUpgrade()
+
+    AutoPatch(Config.PRJ_ROOT, Config.LAST_BOSP_ROOT, Config.BOSP_ROOT, Config.UPGRADE_XML).run()
+
+
+def porting(argv):
+    (olderRoot, newerRoot) = preparePorting(argv)
+
+    AutoPatch(Config.PRJ_ROOT, olderRoot, newerRoot, Config.PORTING_XML).run()
+
+
+
 
 if __name__ == "__main__":
-    Config.setup(sys.argv[1:])
-    AutoPatch()
+    argc = len(sys.argv)
+    if argc < 2:
+        print __doc__
+        sys.exit(0)
+
+    arg1 = sys.argv[1]
+    if   arg1 in ("--patchall,-p"): patchall()
+    elif arg1 in ("--upgrade, -u"): upgrade()
+    elif arg1 in ("--porting, -t"): porting(sys.argv[2:])
+    elif arg1 in ("--patchall-loose, -pl"): patchall(loose=True)
+    elif arg1 in ("--upgrade-loose,  -ul"): upgrade(loose=True)
+

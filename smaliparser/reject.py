@@ -13,7 +13,9 @@ import SmaliEntry
 import Replace
 import SAutoCom
 import tempfile
-from SmaliLib import SmaliLib
+import LibUtils
+
+from formatters.log import Paint
 
 class reject(object):
     REJ_BEGIN = '<<<<<<<'
@@ -32,17 +34,17 @@ class reject(object):
     classdocs
     '''
     def __init__(self, rejectFilePath):
-        self.mASLib = SmaliLib.getSmaliLib(utils.AOSP, 1)
-        self.mBSLib = SmaliLib.getSmaliLib(utils.BOSP, 1)
-        self.mTSLib = SmaliLib.getSmaliLib(utils.TARGET, 1)
-        self.mRejSLib = SmaliLib.getOwnLib(rejectFilePath)
+        self.mASLib = LibUtils.getSmaliLib(utils.AOSP, 1)
+        self.mBSLib = LibUtils.getSmaliLib(utils.BOSP, 1)
+        self.mTSLib = LibUtils.getSmaliLib(utils.TARGET, 1)
+        self.mRejSLib = LibUtils.getOwnLib(rejectFilePath)
                 
         self.rejSmali = Smali.Smali(rejectFilePath)
         self.mClassName = self.rejSmali.getClassName()
         
-        self.aospSmali = self.mASLib.getSmali(self.mClassName)
-        self.bospSmali = self.mBSLib.getSmali(self.mClassName)
-        self.targetSmali = self.mTSLib.getSmali(self.mClassName)
+        self.aospSmali = self.mASLib.getFormatSmali(self.mClassName)
+        self.bospSmali = self.mBSLib.getFormatSmali(self.mClassName)
+        self.targetSmali = self.mTSLib.getFormatSmali(self.mClassName)
         
         self.mFormatList = {}
         self.mCanNotReplaceEntry = []
@@ -122,7 +124,6 @@ class reject(object):
         hasReject = self.hasReject(self.rejSmali.toString())
         if hasReject:
             self.rejSmali.out()
-        SmaliLib.undoFormat()
         if hasReject:
             self.rejSmali = Smali.Smali(self.rejSmali.getPath())
             self.rejSmali.out(self.getOutRejectFilePath())
@@ -147,23 +148,30 @@ class reject(object):
             entry.addFlag(reject.FLAG_REPLACED_TO_BAIDU)
     
     def handleLightFix(self):
+        target = os.path.relpath(self.rejSmali.getPath(), utils.REJECT)
+        print "  "
+        print "  %s %s" % (Paint.bold("FIX CONFLICTS IN"), target)
         for mEntry in self.mBSLib.getEntryList(self.getRejectEntryList()):
             (canReplaceEntry, canNotReplaceEntry) = self.mTSLib.getCanReplaceEntry(self.mBSLib, self.rejSmali.getClassName(), [mEntry], False)
             if utils.has(canReplaceEntry, mEntry):
+                print "  %s %s" % (Paint.green("[PASS]"), mEntry.getName())
                 utils.SLog.ok("\n>>>> Fix reject %s %s in %s: " % (mEntry.getType(), mEntry.getName(), self.rejSmali.getPath()))
                 self.replaceEntryToBosp(mEntry)
-            
+
             for entry in canReplaceEntry:
                 if entry != mEntry:
                     self.replaceEntryToBosp(entry)
             if len(canNotReplaceEntry) > 0:
                 self.mCanNotReplaceEntry.extend(canNotReplaceEntry)
                 if utils.has(canNotReplaceEntry, mEntry):
-                    utils.SLog.fail("\n")
-                    utils.SLog.fail(" Reject: %s %s in %s" % (mEntry.getType(), mEntry.getName(), self.getRealTargetPath(self.mTSLib.getSmali(mEntry.getClassName()))))
-                    utils.SLog.fail("     Can not replace to bosp, bacause of the follows:")
+                    print "  %s %s" % (Paint.red("[FAIL]"), mEntry.getName())
+
+                    utils.SLog.fail("  %s" % target)
+                    #utils.SLog.fail("  CONFLICTS: %s %s in %s" % (mEntry.getType(), mEntry.getName(), self.getRealTargetPath(self.mTSLib.getSmali(mEntry.getClassName()))))
+                    #utils.SLog.fail("  Can not be replaced by bosp, because of the follows:")
                 for entry in canNotReplaceEntry:
-                    utils.SLog.fail("     %s %s in %s" % (entry.getType(), entry.getName(), self.getRealTargetPath(self.mTSLib.getSmali(entry.getClassName()))))
+                    #utils.SLog.fail("     %s %s in %s" % (entry.getType(), entry.getName(), self.getRealTargetPath(self.mTSLib.getSmali(entry.getClassName()))))
+                    pass
             
     @staticmethod
     def missMethod(sLib, entry):
@@ -226,10 +234,11 @@ def fixReject():
     utils.annotation.setAction("make autofix")
     for rejectFile in utils.getSmaliPathList(utils.REJECT, 2):
         reject(rejectFile).fix(reject.FIX_LIGHT)
-        
+
     utils.SLog.setAdviceStr(file(REJECT_ADVICE).read())
     utils.SLog.setSuccessStr(file(REJECT_SUCCESS).read())
     utils.SLog.conclude()
+    LibUtils.undoFormat()
 
 if __name__ == "__main__":
     fixReject()

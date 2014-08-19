@@ -19,7 +19,7 @@ class SmaliEntry(object):
     classdocs
     '''
     
-    def __init__(self, type, content, clsName = None, preContent=None):
+    def __init__(self, type, content, clsName=None, preContent=None):
         '''
         Constructor
         '''
@@ -44,7 +44,7 @@ class SmaliEntry(object):
         self.mFlag = self.mFlag | flag
     
     def rmFlag(self, flag):
-        self.mFlag = self.mFlag &(~flag)
+        self.mFlag = self.mFlag & (~flag)
 
     def setFlag(self, flag):
         self.mFlag = flag
@@ -113,7 +113,10 @@ class SmaliEntry(object):
             return True
         return False
 
-    def format(self, formatMap):
+    def formatUsingField(self, formatMap):
+        return False
+    
+    def undoFormatUsingField(self, formatMap):
         return False
 
     def getFirstLine(self):
@@ -139,7 +142,7 @@ class SmaliEntry(object):
             else:
                 self.mKeyList = []
             
-        #print "keyList: %s" %self.mKeyList
+        # print "keyList: %s" %self.mKeyList
         return self.mKeyList
         
     def hasKey(self, key):
@@ -171,7 +174,7 @@ class SmaliEntry(object):
         return string.join(self.getAttributeList())
 
     def getSimpleString(self):
-        return  "%s %s->%s" %(self.getType(), self.getClassName(), self.getName())
+        return  "%s %s->%s" % (self.getType(), self.getClassName(), self.getName())
 
     def toString(self):
         if self.getPreContentStr() is not None: 

@@ -1,0 +1,11 @@
+#!/system/bin/sh
+
+su -c ls
+
+if [ $? == 0 ]; then
+	echo "OK"
+else
+	echo "ERROR"
+fi;
+
+

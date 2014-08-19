@@ -4,17 +4,15 @@ Created on Mar 26, 2014
 @author: tangliuxiang
 '''
 
-import os
+import os, sys
 import re
 import Smali
-import sys
 import SmaliEntry
 import time
 import getpass
 
-
-sys.path.append('%s/autopatch' %os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from log import Log
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from formatters.log import Log, Paint
 
 KEY_PUBLIC = "public"
 KEY_PRIVATE = "private"
@@ -41,7 +39,7 @@ KEY_INTERFACE = "interface"
 
 class SLog():
     TAG = ""
-    DEBUG = True
+    DEBUG = False
     FAILED_LIST = []
     SUCCESS_LIST = []
     
@@ -49,47 +47,42 @@ class SLog():
     SUCCESS = ""
     @staticmethod
     def e(s):
-        Log.e('%s %s' % (SLog.TAG, s))
+        Log.e(SLog.TAG, s)
     @staticmethod
     def w(s):
-        Log.w('%s %s' % (SLog.TAG, s))
+        Log.w(SLog.TAG, s)
     @staticmethod
     def d(s):
         if SLog.DEBUG:
-            Log.i('%s %s' % (SLog.TAG, s))
+            Log.i(SLog.TAG, s)
         else:
-            Log.d('%s %s' % (SLog.TAG, s))
+            Log.d(SLog.TAG, s)
     @staticmethod
     def i(s):
-        Log.i('%s %s' % (SLog.TAG, s))
+        Log.i(SLog.TAG, s)
     @staticmethod
     def fail(s):
         SLog.FAILED_LIST.append(s)
     @staticmethod
     def ok(s):
         SLog.SUCCESS_LIST.append(s)
-        Log.i('%s %s' % (SLog.TAG, s))
-    @staticmethod
-    def reject(s):
-        Log.reject('%s %s' % (SLog.TAG, s))
+        #Log.i(SLog.TAG, s)
+
     @staticmethod
     def conclude():
-        Log.i("\n")
 
-        Log.i("  +--------------- Results ")
+        print Paint.red("  ____________________________________________________________________________________")
+        print "                                                                                                "
+        print Paint.red("  Go through 'out/still-reject' to find out the rest of conflicts after autofix:      ")
+        print "                                                                                                "
 
         if len(SLog.FAILED_LIST) > 0:
-            Log.i("  |                                                                                             ")
-            Log.i("  |  >> The failure are as follows, please check out:                                 ")
-            Log.i("  |                                                                                             ")
-            for failed in SLog.FAILED_LIST: Log.i("  |     " + failed)
-            Log.i(SLog.ADVICE)
-
+            for failed in set(SLog.FAILED_LIST): print Paint.red(failed)
+            #Log.i(SLog.TAG, SLog.ADVICE)
         else:
-            Log.i(SLog.SUCCESS)
+            #Log.i(SLog.TAG, SLog.SUCCESS)
+            pass
 
-        Log.i("  +---------------")
-        Log.i("\n")
         
     @staticmethod
     def setAdviceStr(str):
@@ -104,7 +97,7 @@ REJECT = '%s/out/reject' %(PRJ_ROOT)
 BOSP = '%s/autopatch/bosp' %(PRJ_ROOT)
 AOSP = '%s/autopatch/aosp' %(PRJ_ROOT)
 TARGET = "%s/out/obj/autofix/target" %(PRJ_ROOT)
-OUT_REJECT = '%s/out/reject-fixed' %(PRJ_ROOT)
+OUT_REJECT = '%s/out/still-reject' %(PRJ_ROOT)
 
 SMALI_POST_SUFFIX = r'\.smali'
 PART_SMALI_POST_SUFFIX = r'\.smali\.part'

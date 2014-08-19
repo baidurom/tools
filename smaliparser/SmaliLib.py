@@ -13,17 +13,12 @@ import sys
 import SmaliMethod
 import traceback
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from format import Format
-
 MAX_CHECK_INVOKE_DEEP = 50
 
 class SmaliLib(object):
     '''
     classdocs
     '''
-    mSmaliLibDict = {}
-    mFormatList = {}
     def __init__(self, libPath, smaliDirMaxDepth=0):
         '''
         Constructor
@@ -37,33 +32,6 @@ class SmaliLib(object):
         self.mSmaliFileList = None
         self.mSmaliDirMaxDepth = smaliDirMaxDepth
 
-    @staticmethod
-    def getSmaliLib(libPath, smaliDirMaxDepth=0):
-        absRoot = os.path.abspath(libPath)
-        if not SmaliLib.mSmaliLibDict.has_key(absRoot) or SmaliLib.mSmaliLibDict[absRoot].mSmaliDirMaxDepth != smaliDirMaxDepth:
-            SmaliLib.mSmaliLibDict[absRoot] = SmaliLib(libPath, smaliDirMaxDepth)
-        return SmaliLib.mSmaliLibDict[absRoot]
-    
-    @staticmethod
-    def getLibPath(path):
-        if os.path.isdir(path):
-            children = os.listdir(path)
-            for child in children:
-                if os.path.isdir("%s/smali" % child):
-                    return path
-        while not os.path.isdir("%s/smali" % path):
-            path = os.path.dirname(path)
-            if path == "/":
-                return None
-        return os.path.dirname(path)
-    
-    @staticmethod
-    def getOwnLib(smaliFile):
-        libPath = SmaliLib.getLibPath(smaliFile)
-        if libPath is not None:
-            return SmaliLib.getSmaliLib(libPath, 1)
-        return None
-    
     def cleanModify(self):
         for cls in self.mSDict.keys():
             self.mSDict[cls].cleanModify()
@@ -125,29 +93,6 @@ class SmaliLib(object):
             return self.mSDict[className]
         
         return None
-
-    def __format(self, root, sPath):
-        sPath = os.path.abspath(sPath)
-        if not SmaliLib.mFormatList.has_key(sPath):
-            sFormat = Format(root, sPath)
-            sFormat.do(Format.ACCESS_TO_NAME | Format.RESID_TO_NAME | Format.REMOVE_LINE)
-            SmaliLib.mFormatList[sPath] = sFormat
-            return True
-        return False
-    
-    def getFormatSmali(self, clsName):
-        oldSmali = self.getSmali(clsName)
-        if oldSmali is None:
-            print "Can not get class: %s in %s" %(clsName, self.getPath())
-            return None
-        if self.__format(self.getPath(), oldSmali.getPath()):
-            self.setSmali(clsName, Smali.Smali(oldSmali.getPath()))
-        return self.getSmali(clsName)
-    
-    @staticmethod
-    def undoFormat():
-        for fKey in SmaliLib.mFormatList.keys():
-            SmaliLib.mFormatList[fKey].undo()
     
     def setSmali(self, className, smali):
         self.mSDict[className] = smali
@@ -236,7 +181,7 @@ class SmaliLib(object):
             utils.SLog.w("can not get class %s from smali lib" % (smali.getClassName()))
             return []
         
-    def getAllFathers(self, smali):
+    def getAllFathers(self, smali, allowDuplicate = False):
         if smali is None:
             return []
         allFathersList = []
@@ -244,8 +189,16 @@ class SmaliLib(object):
             cSmali = self.getSmali(clsName)
             if cSmali is not None:
                 allFathersList.append(clsName)
+        
+        for clsName in smali.getSuperAndImplementsClassName():
+            cSmali = self.getSmali(clsName)
+            if cSmali is not None:
                 allFathersList.extend(self.getAllFathers(cSmali))
-        return list(set(allFathersList))
+        
+        if allowDuplicate:
+            return allFathersList
+        else:
+            return list(set(allFathersList))
         
     def getAbstractMethodsNameList(self, smali):
         absMethodsNameList = smali.getAbstractMethodsNameList()
@@ -366,7 +319,7 @@ class SmaliLib(object):
         if smali.hasEntry(type, name):
             return smali.getClassName()
 
-        allClsName = self.getAllFathers(smali)
+        allClsName = self.getAllFathers(smali, True)
         for clsName in allClsName:
             cSmali = self.getSmali(clsName)
             assert cSmali is not None, "Error: can not get class from: %s" % (self.getPath())
@@ -397,7 +350,7 @@ class SmaliLib(object):
             if hasMethod is False:
                 utils.SLog.e("%s doesn't has method %s, was called by: %s" % (smali.getClassName(), method, string.join(allCalledMethods[key])))
 
-    def format(self, smali):
+    def formatUsingField(self, smali):
         if smali is None:
             return
 
@@ -413,9 +366,16 @@ class SmaliLib(object):
                         targetKey = r'%s->%s' % (belongCls, usedFieldsItem.field)
                         utils.SLog.d("change %s to %s" % (key, targetKey))
                         self.mFieldFormatMap[key] = targetKey
-            if smali.format(self.mFieldFormatMap):
+            if smali.formatUsingField(self.mFieldFormatMap):
                 smali.out()
                 
+    def undoFormatUsingField(self, smali):
+        if smali is None:
+            return
+        
+        if smali.undoFormatUsingField():
+            smali.out()
+        
     def getEntryList(self, oriEntryList):
         outEntryList = []
         for entry in oriEntryList:

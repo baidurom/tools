@@ -89,7 +89,7 @@ class Toolkit:
             type = fileHandle.read().rstrip()
             fileHandle.close()
         except:
-            print " >>> Can not find type.config, use COMMON as image type by default"
+            print ">>> Can not find type.config, use COMMON as image type by default"
             type = "COMMON"
         return type
 

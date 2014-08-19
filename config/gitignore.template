@@ -1,0 +1,4 @@
+/baidu/*
+/autopatch/*
+/out/*
+.gitignore

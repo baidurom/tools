@@ -45,6 +45,7 @@ class Smali(object):
         self.mModifed = False
         self.mDefaultOutPath = None
         self.mPreOutPath = None
+        self.mFormatMapFile = "%s.fieldMap" %(self.mPath)
  
     def useField(self, name):
         pass
@@ -376,11 +377,47 @@ class Smali(object):
 
         return partList
 
-    def format(self, formatMap):
+    def formatUsingField(self, formatFieldMap):
+        modified = False
+            
+        for entry in self.getEntryList():
+            if entry.formatUsingField(formatFieldMap):
+                modified = True
+        #self.__saveFormatMap(formatFieldMap)
+        return modified
+    
+    def __saveFormatMap(self, formatFieldMap):
+        mapFile = file(self.mFormatMapFile, "w+")
+        
+        for key in formatFieldMap.keys():
+            mapFile.write("%s#%s\n" %(key, formatFieldMap[key]))
+        
+        mapFile.close()
+        
+    def __getReverseFormatMap(self):
+        formatFieldMap = {}
+        if not os.path.isfile(self.mFormatMapFile):
+            return formatFieldMap
+        
+        mapFile = file(self.mFormatMapFile, "r")
+        for line in mapFile.readlines():
+            splitArray = line[:-1].split('#')
+            assert len(splitArray) >= 2, "Error: Wrong format map in %s" %(self.getPath())
+            
+            formatFieldMap[splitArray[1]] = splitArray[0]
+        
+        mapFile.close()
+        return formatFieldMap
+    
+    def undoFormatUsingField(self):
+        formatFieldMap = self.__getReverseFormatMap()
         modified = False
         for entry in self.getEntryList():
-            if entry.format(formatMap):
+            if entry.formatUsingField(formatFieldMap):
                 modified = True
+        
+        if os.path.isfile(self.mFormatMapFile):
+            os.remove(self.mFormatMapFile)
         return modified
     
     def isModifed(self):

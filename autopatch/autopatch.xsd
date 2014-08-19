@@ -10,20 +10,11 @@
     <xs:element name="revise" type="ReviseType" />
 
     <!-- Attribute Definition -->
-    <xs:attribute name="require" type="RequireType" />
     <xs:attribute name="action" type="ActionType" />
     <xs:attribute name="description" type="xs:string" />
     <xs:attribute name="target" type="xs:string" />
-    <xs:attribute name="patch" type="xs:string" />
-    <xs:attribute name="routine" type="xs:string" />
 
     <!-- Simple Type Definition -->
-    <xs:simpleType name="RequireType">
-        <xs:restriction base="xs:string">
-            <xs:pattern value="MUST|OPTION"/>
-         </xs:restriction>
-    </xs:simpleType>
-
     <xs:simpleType name="ActionType">
         <xs:restriction base="xs:string">
             <xs:pattern value="ADD|REPLACE|MERGE" />
@@ -42,15 +33,12 @@
         <xs:sequence>
             <xs:element ref="revise"/>
         </xs:sequence>
-        <xs:attribute ref="require" />
         <xs:attribute ref="description" />
     </xs:complexType>
 
     <xs:complexType name="ReviseType">
         <xs:attribute ref="action" />
         <xs:attribute ref="target" />
-        <xs:attribute ref="patch" />
-        <xs:attribute ref="routine" />
     </xs:complexType>
 
 </xs:schema>

@@ -3,9 +3,9 @@ Created on Jun 4, 2014
 
 @author: tangliuxiang
 '''
-from SmaliLib import SmaliLib
 from xml.dom import minidom
 import Content
+import LibUtils
 import Smali
 import SmaliEntry
 import SmaliEntryFactory
@@ -14,11 +14,9 @@ import SmaliMethod
 import os
 import re
 import string
-import sys
 import utils
+import sys
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from format import Format
 
 class Replace(object):
     '''
@@ -31,10 +29,10 @@ class Replace(object):
         '''
         Constructor
         '''
-        self.mVSLib = SmaliLib.getSmaliLib(vendorDir)
-        self.mASLib = SmaliLib.getSmaliLib(aospDir)
-        self.mBSLib = SmaliLib.getSmaliLib(bospDir)
-        self.mMSLib = SmaliLib.getSmaliLib(mergedDir)
+        self.mVSLib = LibUtils.getSmaliLib(vendorDir)
+        self.mASLib = LibUtils.getSmaliLib(aospDir)
+        self.mBSLib = LibUtils.getSmaliLib(bospDir)
+        self.mMSLib = LibUtils.getSmaliLib(mergedDir)
     
     def preReplaceCheck(self, smali):
         unImplementMethods = self.getUnImplementMethods(smali)
@@ -86,8 +84,8 @@ class Replace(object):
         srcEntry = srcSmali.getEntry(type, name)
         returnValue = False
         if srcEntry is not None:
-            srcLib = SmaliLib.getOwnLib(src)
-            dstLib = SmaliLib.getOwnLib(dst)
+            srcLib = LibUtils.getOwnLib(src)
+            dstLib = LibUtils.getOwnLib(dst)
             if withCheck:
                 (canReplaceEntry, canNotReplaceEntry) = dstLib.getCanReplaceEntry(srcLib, dstSmali.getClassName(), [srcEntry], False)
             
@@ -185,14 +183,17 @@ class Replace(object):
         return self.mMSLib.getCanReplaceEntry(self.mBSLib, smali.getClassName(), methodEntryList)
     
 def replaceMethod(src, dst, methodName, withCheck = False):
-    if Replace.replaceEntry(src, dst, SmaliEntry.METHOD, methodName, withCheck):
+    ret = Replace.replaceEntry(src, dst, SmaliEntry.METHOD, methodName, withCheck)
+    if ret:
         utils.SLog.i("\n>>>> SUCCESS: replaced method %s from %s to %s" %(methodName, src, dst))
     else:
         utils.SLog.i("\n>>>> FAILED: Can not replace method %s from %s to %s" %(methodName, src, dst))
-    SmaliLib.undoFormat()
+    LibUtils.undoFormat()
+    return ret
     
 def methodtobosp(smaliFile, methodName, withCheck = True):
     utils.annotation.setAction("methodtosmali")
     src = utils.getMatchFile(smaliFile, utils.BOSP)
     dst = utils.getMatchFile(smaliFile, utils.TARGET)
-    replaceMethod(src, dst, methodName, withCheck)
+    if replaceMethod(src, dst, methodName, withCheck) is False:
+        raise

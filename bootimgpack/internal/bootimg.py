@@ -7,15 +7,19 @@ __author__ = 'duanqizhi01@baidu.com (duanqz)'
 import commands
 from internal.toolkit import *
 
+import imgformat
+
 class Bootimg:
     """
     Model of boot image. With the property of type.
     """
 
     TOOLKIT = Toolkit()
+    FORMAT_BEFORE_UNPACK = True
 
     def __init__(self, bootfile):
         self.bootfile = bootfile
+        self.imgFormat = imgformat.ImgFormat(self.bootfile)
 
     def setType(self, type):
         """
@@ -28,18 +32,20 @@ class Bootimg:
         """
         Unpack the boot image into the output directory.
         """
+        if Bootimg.FORMAT_BEFORE_UNPACK:
+            self.imgFormat.format()
 
         # Try unpack tool set to find the suitable one
         self.type = self.TOOLKIT.getType(self.bootfile)
 
         # Check whether the tools exists
-        if self.type == None: raise ValueError("Unknown boot image type.")
+        if self.type == None: raise ValueError("Unknown boot image type: " + self.bootfile)
 
         # Execute the unpack command
         unpackTool = self.TOOLKIT.getTools(self.type, "UNPACK")
         cmd = unpackTool + " " + self.bootfile + " " + output
         commands.getstatusoutput(cmd)
-        print " >>> Unpack " + self.type + " " + self.bootfile + " --> " + output
+        print ">>> Unpack " + self.type + " " + self.bootfile + " --> " + output
 
         # Store the used tools to output
         Toolkit.storeType(self.type, output)
@@ -59,7 +65,7 @@ class Bootimg:
         packTool = self.TOOLKIT.getTools(self.type, "PACK")
         cmd = packTool + " " + self.bootfile + " " + output
         commands.getstatusoutput(cmd)
-        print " >>> Pack " + self.type + " " + self.bootfile + " --> " + output
+        print ">>> Pack " + self.type + " " + self.bootfile + " --> " + output
 
 ### End of class Bootimg
 

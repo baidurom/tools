@@ -1,0 +1,53 @@
+#!/bin/bash
+
+prog="$0"
+while [ -h "${prog}" ]; do
+    newProg=`/bin/ls -ld "${prog}"`
+    #echo ${newProg}
+
+    newProg=`expr "${newProg}" : ".* -> \(.*\)$"`
+    if expr "x${newProg}" : 'x/' >/dev/null; then
+        prog="${newProg}"
+    else
+        progdir=`dirname "${prog}"`
+        prog="${progdir}/${newProg}"
+    fi
+done
+oldwd=`pwd`
+progdir=`dirname "${prog}"`
+cd "${progdir}"
+progdir=`pwd`
+prog="${progdir}"/`basename "${prog}"`
+cd "${oldwd}"
+
+src=$1
+target=$2
+CHECK_SU=$progdir/check-su
+pcp=$progdir/phone-cp
+ptmp_su_push=/data/local/tmp/su_push
+phone_cp=/data/local/tmp/phone-cp
+
+src_basename=`basename $src`
+
+if [ -f $src ] || [ -d $src ]; then
+	adb wait-for-device
+	$CHECK_SU
+	if [ $? != 0 ]; then
+		echo "Error: failed to push $src to $target"
+		echo "     You better make sure you have an correct su, you can run check-su to test if su is ok"
+		exit 1
+	fi
+	
+	echo "adb push $src $ptmp_su_push"
+
+	adb shell rm -r $ptmp_su_push
+	adb push $src $ptmp_su_push
+	adb push $pcp $phone_cp
+	adb shell chmod 777 $phone_cp
+
+	if [[ $target == "/system/"* ]];then
+		echo "su -c \"mount -o remount,rw /system; $phone_cp $ptmp_su_push $target;mount -o remount,ro /system\"; exit $?" | adb shell
+	else
+		echo "su -c \"$phone_cp $ptmp_su_push $target;\"; exit $?" | adb shell
+	fi
+fi

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- code
+000~099: error number
+100~199: command instruduce
+200~255: funny
+-->
+
+<items category="patchall">
+
+	<item name="NO_CONFLICT" code="31">
+		<detail>
+		  ────────────────────────────────────────────────────────────────────────────────────
+
+		     Advice:
+		      1. Although no conflict, mistakes still come out sometimes,
+		         it depends on your device, VENDOR may change AOSP a lot.
+
+		      2. You could go on to run fullota, flash the outcom into your device,
+		         and then fix bugs depends on real-time logs.
+
+		  ────────────────────────────────────────────────────────────────────────────────────
+		</detail>
+	</item>
+
+	<item name="CONFLICTS_HAPPENED" code="32">
+		<detail>
+		  ────────────────────────────────────────────────────────────────────────────────────
+
+		     Advice:
+		      1. Each conflict is marked out like:
+
+		         &lt;&lt;&lt;&lt;&lt;&lt;&lt; VENDOR
+		           Codes of VENDOR
+		         =======
+		           Codes of BOSP
+		         &gt;&gt;&gt;&gt;&gt;&gt;&gt; BOSP
+
+		         you'd better resolve all conflicts before going on with the following work.
+
+		      2. You might follow three steps to resolve conflicts manually:
+		         - compare VENDOR and REJECT to find out where conflicts happened;
+		         - compare AOSP   and BOSP   to find out where Baidu changes;
+		         - compare VENDOR and BOSP   to decide how to resolve conflicts.
+
+			  3. You might issue 'coron autofix' to resolve conflicts automatically
+
+			     If you do not know the definition of AOSP, BOSP or VENDOR, type the command
+			     to see what are they:
+			       $ coron help patchall
+		  ────────────────────────────────────────────────────────────────────────────────────
+		</detail>
+	</item>
+
+</items>

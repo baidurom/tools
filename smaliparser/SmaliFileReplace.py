@@ -9,11 +9,12 @@ import SmaliEntry
 import SAutoCom
 import os
 import utils
-import SmaliLib
+import LibUtils
 import Content
+import FormatSmaliLib
 
 class FileReplace(utils.precheck):
-    mASLib = SmaliLib.SmaliLib.getSmaliLib(utils.AOSP)
+    mASLib = LibUtils.getSmaliLib(utils.AOSP)
     
     def __init__(self, withCheck):
         self.outMap = {}
@@ -42,8 +43,8 @@ class FileReplace(utils.precheck):
 
     def __replaceOneFile__(self, srcSmali, dstSmali):
         utils.SLog.i("\n>>>> Try replace %s to %s" %(dstSmali.getPath(), srcSmali.getPath()))
-        #dstLib = SmaliLib.SmaliLib.getOwnLib(dstSmali.getPath())
-        #srcLib = SmaliLib.SmaliLib.getOwnLib(srcSmali.getPath())
+        #dstLib = LibUtils.getOwnLib(dstSmali.getPath())
+        #srcLib = LibUtils.getOwnLib(srcSmali.getPath())
          
         clsName = srcSmali.getClassName()
         self.curClassName = clsName
@@ -66,7 +67,7 @@ class FileReplace(utils.precheck):
                 self.curSrcLib.replaceEntry(self.curDstLib, entry, True, False)
             
         self.curDstLib.setSmali(clsName, srcSmali)
-        nDstLib = SmaliLib.SmaliLib(SmaliLib.SmaliLib.getLibPath(dstSmali.getPath()))
+        nDstLib = FormatSmaliLib.FormatSmaliLib(LibUtils.getLibPath(dstSmali.getPath()))
         noError = True
         for dEntry in dstSmali.getEntryList():
             if not srcSmali.hasEntry(dEntry.getType(), dEntry.getName()):
@@ -118,8 +119,8 @@ class FileReplace(utils.precheck):
             utils.SLog.fail(">>>> Failed to replace %s to %s" %(dst, src))
             return False
         
-        self.curSrcLib = SmaliLib.SmaliLib.getOwnLib(src)
-        self.curDstLib = SmaliLib.SmaliLib.getOwnLib(dst)
+        self.curSrcLib = LibUtils.getOwnLib(src)
+        self.curDstLib = LibUtils.getOwnLib(dst)
         
         self.curSrcLib.cleanModify()
         self.curDstLib.cleanModify()
@@ -135,7 +136,7 @@ class FileReplace(utils.precheck):
         self.curSuccess = True
         self.curAction = "replace %s to %s" %(dst, src)
         
-        nDstLib = SmaliLib.SmaliLib(SmaliLib.SmaliLib.getLibPath(dstSmali.getPath()))
+        nDstLib = FormatSmaliLib.FormatSmaliLib(LibUtils.getLibPath(dstSmali.getPath()))
         
         srcMemberSmaliList.append(srcSmali)
         dstMemberSmaliList.append(dstSmali)
@@ -203,8 +204,8 @@ class FileReplace(utils.precheck):
         srcSmali = Smali.Smali(src)
         dstSmali = Smali.Smali(dst)
         
-        self.curSrcLib = SmaliLib.SmaliLib.getOwnLib(src)
-        self.curDstLib = SmaliLib.SmaliLib.getOwnLib(dst)
+        self.curSrcLib = LibUtils.getOwnLib(src)
+        self.curDstLib = LibUtils.getOwnLib(dst)
         
         self.curSrcLib.cleanModify()
         self.curDstLib.cleanModify()
@@ -263,7 +264,7 @@ class FileReplace(utils.precheck):
         utils.precheck.setInstance(self)
         
     def __exit__(self):
-        SmaliLib.SmaliLib.undoFormat()
+        LibUtils.undoFormat()
 
 SMALITOBOSP_ADVICE = "%s/help/smalitobosp_advice" %os.path.dirname(os.path.abspath(__file__))
 SMALITOBOSP_SUCCESS = "%s/help/smalitobosp_success" %os.path.dirname(os.path.abspath(__file__))
@@ -274,9 +275,10 @@ def smalitobosp(args, withCheck = True):
         src = utils.getMatchFile(smaliFile, utils.BOSP)
         dst = utils.getMatchFile(smaliFile, utils.TARGET)
         
-        fReplace.replace(src, dst)
+        if fReplace.replace(src, dst) is False:
+            raise
     utils.SLog.setAdviceStr(file(SMALITOBOSP_ADVICE).read())
     utils.SLog.setSuccessStr(file(SMALITOBOSP_SUCCESS).read())
-    utils.SLog.conclude()
+    #utils.SLog.conclude()
     fReplace.__exit__()
         

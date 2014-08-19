@@ -8,26 +8,20 @@ Incorporate changes from older to newer into target.
 __author__ = 'duanqz@gmail.com'
 
 
+TAG="diff_patch"
+
 import os
 import commands
 import shutil
 import fnmatch
+import tempfile
 
-from os import sys, path
 from config import Config
-from log import Log
-
-sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from smaliparser.Smali import Smali
-from format import Format
-
+from formatters.log import Log
 
 
 class DiffPatch():
-
-    TARGET_OUT = os.path.join(Config.PRJ_ROOT, "target")
-    OLDER_OUT  = os.path.join(Config.PRJ_ROOT, "older")
-    NEWER_OUT  = os.path.join(Config.PRJ_ROOT, "newer")
 
     def __init__(self, target, older, newer):
         self.mTarget = target
@@ -35,60 +29,64 @@ class DiffPatch():
         self.mNewer  = newer
 
     def run(self):
-        if not os.path.exists(self.mTarget) or \
-           not os.path.exists(self.mOlder)  or \
-           not os.path.exists(self.mNewer)  :
-            return True
+        if fnmatch.fnmatch(self.mTarget, "*.smali"):
+            self.diff3_smali()
+        else:
+            self.diff3_non_smali()
 
-        # Do NOT split XML
-        if fnmatch.fnmatch(self.mTarget, "*.xml"):
-            DiffPatch.__shellDiff3(self.mTarget, self.mOlder, self.mNewer)
-            return self.checkConflict()
-
-        return self.diff3()
-
-    def diff3(self):
-        """ Incorporate changes from older to newer into target.
-            Return True if no conflicts, otherwise return False.
+    def diff3_non_smali(self):
+        """ diff3 for non SMALI file
         """
 
-        self.prepare()
+        DiffPatch.__diff3(self.mTarget, self.mOlder, self.mNewer)
 
-        # Split the target, older and newer
-        targetSplitter = Splitter().split(self.mTarget, DiffPatch.TARGET_OUT)
-        olderSplitter  = Splitter().split(self.mOlder,  DiffPatch.OLDER_OUT)
-        newerSplitter  = Splitter().split(self.mNewer,  DiffPatch.NEWER_OUT)
+    def diff3_smali(self):
+        """ diff3 for SMALI file
+            Each file will be split to lots of parts, then using diff3 by each part,
+            at last, all the parts will be joined again.
+        """
+
+        # Acquire splitters
+        splitters = Splitters()
+        (target, older, newer) = splitters.aquire(self.mTarget, self.mOlder, self.mNewer)
 
         # Patch partitions one by one
-        for newerPart in newerSplitter.getAllParts():
-            targetPart = targetSplitter.match(newerPart)
-            olderPart  = olderSplitter.match(newerPart)
+        for newerPart in newer.getAllParts():
+            targetPart = target.match(newerPart)
+            olderPart  = older.match(newerPart)
 
-            if not os.path.exists(olderPart):
-                if not os.path.exists(targetPart):
-                    # newer not exist in target
-                    targetSplitter.appendPart(newerPart)
-                else:
-                    # newer already exist in target
-                    pass
+            # Case
+            # target older   action
+            #   o      o     merge
+            #   o      x     replace
+            #   x      o     conflict
+            #   x      x     append
 
-                continue
-            elif not os.path.exists(targetPart):
-                # Target might be removed by vendor
-                continue
+            targetExists = os.path.exists(targetPart)
+            olderExists  = os.path.exists(olderPart)
+            if targetExists and olderExists:
+                # all of items exist. (merge)
+                DiffPatch.__diff3(targetPart, olderPart, newerPart)
+            elif targetExists:
+                # newer already exist in target. (replace)
+                target.replacePart(targetPart, newerPart)
+                pass
+            elif olderExists:
+                # target might be removed by vendor. (conflict)
+                target.conflictPart(olderPart, newerPart)
+                pass
+            else:
+                # newer not exist in older and target. (append)
+                target.appendPart(newerPart)
 
-            DiffPatch.__shellDiff3(targetPart, olderPart, newerPart)
+        # Release splitters
+        splitters.release()
 
-        # Join the partitions
-        targetSplitter.join()
-
-        self.clean()
-
-        return self.checkConflict()
 
     @staticmethod
-    def __shellDiff3(target, older, newer):
-        """ Using shell diff3.
+    def __diff3(target, older, newer):
+        """ Incorporate changes from older to newer into target.
+            Return True if no conflicts, otherwise return False.
         """
 
         # Exit status is 0 if successful, 1 if conflicts, 2 if trouble
@@ -105,118 +103,50 @@ class DiffPatch():
             targetFile.write(output)
             targetFile.close()
 
+        # status is 0 if successful
         return status == 0
 
-    def prepare(self):
-        for tmpDir in (DiffPatch.TARGET_OUT, DiffPatch.OLDER_OUT, DiffPatch.NEWER_OUT):
-            if not os.path.exists(tmpDir): os.makedirs(tmpDir)
 
-        action = Format.REMOVE_LINE | Format.ACCESS_TO_NAME | Format.RESID_TO_NAME
-        self.mFormatTarget = Format(Config.PRJ_ROOT, self.mTarget).do(action)
-        self.mFormatOlder  = Format(Config.OLDER_DIR, self.mOlder).do(action)
-        self.mFormatNewer  = Format(Config.NEWER_DIR, self.mNewer).do(action)
+###
+### SMALI Splitter
+###
 
-    def clean(self):
-        self.mFormatTarget.undo()
-        self.mFormatOlder.undo()
-        self.mFormatNewer.undo()
-
-        for tmpDir in (DiffPatch.TARGET_OUT, DiffPatch.OLDER_OUT, DiffPatch.NEWER_OUT):
-            shutil.rmtree(tmpDir)
-
-    def checkConflict(self):
-        """ Check whether conflict happen or not in output
-            Return True if no conflict happen. otherwise return False
-        """
-
-        CONFILCT_START = "<<<<<<<"
-        CONFLICT_MID   = "======="
-        CONFILCT_END   = ">>>>>>>"
-
-        top = 0
-        size = 0
-        conflictCnt = 0
-        delLineNumbers = []
-
-        needToDel = False
-
-        targetFile = open(self.mTarget, "r+")
-
-        lineNum = 0
-        lines = targetFile.readlines()
-
-        for line in lines:
-            size = conflictCnt
-            if line.startswith(CONFILCT_START):
-
-                top += 1
-
-                # Modify the conflict in the original
-                lines[lineNum] = "%s #Conflict %d\n" % (line.rstrip(),size)
-                conflictCnt += 1
-
-                #conflicts.append("#Conflict %d , start at line %d\n" % (size, lineNum))
-                #conflicts[size] += line
-
-                delLineNumbers.append(lineNum)
-
-            elif line.startswith(CONFILCT_END):
-
-                # Modify the conflict in the original
-                lines[lineNum] = "%s #Conflict %d\n" % (line.rstrip(), size-top)
-
-                #conflicts[size-top] += line
-                #conflicts[size-top] += "#Conflict %d , end at line %d\n\n" % (size-top, lineNum)
-
-                delLineNumbers.append(lineNum)
-                needToDel = False
-
-                if top == 0: break;
-                top -= 1
-
-            else:
-                if top > 0:
-                    #conflicts[size-top] += line
-
-                    if line.startswith(CONFLICT_MID):
-                        # Modify the conflict in the original
-                        lines[lineNum] = "%s #Conflict %d\n" % (line.rstrip(), size-top)
-                        needToDel = True
-
-                    if needToDel:
-                        delLineNumbers.append(lineNum)
-
-            lineNum += 1
-
-
-        # Create a reject file if conflict happen
-        if conflictCnt > 0:
-            Log.d("  [Conflict happened. Total %d ]" %conflictCnt)
-            rejFilename = Config.createReject(self.mTarget)
-            rejFile = open(rejFilename, "wb")
-            rejFile.writelines(lines)
-            rejFile.close()
-
-        # Write back target
-        for lineNum in delLineNumbers[::-1]:
-            del lines[lineNum]
-
-        targetFile.seek(0)
-        targetFile.truncate()
-        targetFile.writelines(lines)
-        targetFile.close()
-
-        return conflictCnt == 0
-
-class Splitter:
-    """ Splitter of smali file
+class Splitters:
+    """ Holder of all the SMALI splitters.
     """
 
-    def __init__(self):
-        pass
+    TMP = tempfile.mktemp()
+    TARGET_OUT = os.path.join(TMP, "target")
+    OLDER_OUT  = os.path.join(TMP, "older")
+    NEWER_OUT  = os.path.join(TMP, "newer")
+
+    def aquire(self, target, older, newer):
+
+        # Prepare temporary directory
+        for tmpDir in (Splitters.TARGET_OUT, Splitters.OLDER_OUT, Splitters.NEWER_OUT):
+            if not os.path.exists(tmpDir): os.makedirs(tmpDir)
+
+        # Split the target, older and newer
+        self.targetSplitter = SmaliSplitter().split(target, Splitters.TARGET_OUT)
+        self.olderSplitter  = SmaliSplitter().split(older,  Splitters.OLDER_OUT)
+        self.newerSplitter  = SmaliSplitter().split(newer,  Splitters.NEWER_OUT)
+
+        return (self.targetSplitter, self.olderSplitter, self.newerSplitter)
+
+    def release(self):
+        # Join the partitions
+        self.targetSplitter.join()
+
+        # Remove temporary directory
+        shutil.rmtree(Splitters.TMP)
+
+
+class SmaliSplitter:
+    """ Independent splitter of SMALI file
+    """
 
     def split(self, origSmali, output=None):
-        """ Split the original smali file into partitions
+        """ Split the original SMALI file into partitions
         """
 
         if output == None: output = os.path.dirname(origSmali)
@@ -241,8 +171,48 @@ class Splitter:
         try:
             self.mPartList.index(part)
         except:
-            Log.d("  [Add new part %s ] " % part)
+            Log.d(TAG, "  [Add new part %s ] " % part)
             self.mPartList.append(part)
+
+    def replacePart(self, targetPart, newerPart):
+        try:
+            index = self.mPartList.index(targetPart)
+            self.mPartList[index] = newerPart
+            Log.d(TAG, "  [Replace %s by %s] " % (targetPart, newerPart))
+        except:
+            Log.e(TAG, "SmaliSplitter.replacePart() can not find part %s" % targetPart)
+
+
+    def conflictPart(self, olderPart, newerPart):
+        # Get older part content
+        olderHandle = open(olderPart, "rb")
+        olderContent = olderHandle.read()
+        olderHandle.close()
+
+        # Get newer part content
+        newerHandle = open(newerPart, "r+")
+        newerContent = newerHandle.read()
+
+        # Compare older and newer content
+        if olderContent == newerContent:
+            # BOSP has no change on AOSP.
+            # Still handle this case: "access$" method
+            if newerPart.find("access$") >= 0:
+                Log.d(TAG, "  [Same access part %s ] " % newerPart)
+                self.mPartList.append(newerPart)
+        else:
+            # BOSP has changes on AOSP.
+
+            # Conflict happened
+            Log.d(TAG, "  [Conflict part %s ] " % newerPart)
+
+            # Mark out the conflict
+            newerContent = "\n<<<<<<< VENDOR\n=======%s\n>>>>>>> BOSP\n" % newerContent
+            newerHandle.seek(0)
+            newerHandle.truncate()
+            newerHandle.write(newerContent)
+            newerHandle.close()
+            self.mPartList.append(newerPart)
 
     def join(self):
         """ Join all the partitions.
@@ -264,8 +234,30 @@ class Splitter:
         return self
 
 
+
+def test():
+    print "Result\t%s" % Config.PRJ_ROOT
+    print "------  ---------------------------------------------------"
+
+    # Test for XML
+    f = "framework-res/AndroidManifest.xml"
+    target = os.path.join(Config.PRJ_ROOT,  f)
+    older  = os.path.join(Config.AOSP_ROOT, f)
+    newer  = os.path.join(Config.BOSP_ROOT, f)
+
+    print DiffPatch(target, older, newer).run(),
+    print "\t" + f
+
+    # Test for SMALI
+    f = "framework.jar.out/smali/android/content/res/AssetManager.smali"
+    target = os.path.join(Config.PRJ_ROOT,  f)
+    older  = os.path.join(Config.AOSP_ROOT, f)
+    newer  = os.path.join(Config.BOSP_ROOT, f)
+
+    print DiffPatch(target, older, newer).run(),
+    print "\t" + f
+
+
+
 if __name__ == "__main__":
-    target = "/media/source/smali/smali-4.2/devices/p6/framework-res/AndroidManifest.xml"
-    older  = "/media/source/smali/smali-4.2/devices/p6/autopatch/aosp/framework-res/AndroidManifest.xml"
-    newer  = "/media/source/smali/smali-4.2/devices/p6/autopatch/bosp/framework-res/AndroidManifest.xml"
-    DiffPatch(target, older, newer).run()
+    test()
