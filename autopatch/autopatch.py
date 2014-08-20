@@ -100,11 +100,11 @@ class ReviseExecutor:
     DELETE  = "DELETE"
     REPLACE = "REPLACE"
 
+    TARGET_FINDER = TargetFinder()
+
     def __init__(self, revise):
         """ @args revise: the revise XML node.
         """
-
-        self.targetFiner = TargetFinder()
 
         self.action = revise.attrib['action']
 
@@ -177,9 +177,6 @@ class ReviseExecutor:
         """ action for a single file
         """
 
-        # Find the actually target
-        target = self.targetFiner.find(target)
-
         try:
             if   self.action == ReviseExecutor.ADD:     result = ReviseExecutor.singleReplaceOrAdd(target, newer)
             elif self.action == ReviseExecutor.MERGE:   result = ReviseExecutor.singleMerge(target, older, newer)
@@ -198,6 +195,8 @@ class ReviseExecutor:
             Replace the target if exist.
         """
 
+        # Find out the actual target
+        target = ReviseExecutor.TARGET_FINDER.find(target)
 
         if os.path.exists(target):
             execute = "REPLACE  " + target
@@ -227,6 +226,12 @@ class ReviseExecutor:
 
     @staticmethod
     def singleMerge(target, older, newer):
+        """ Incorporate changes from older to newer into target
+        """
+
+        # Find out the actual target loosely
+        target = ReviseExecutor.TARGET_FINDER.find(target, loosely=True)
+
         execute = "  MERGE  " + target
 
         if not os.path.exists(target) :
@@ -257,6 +262,12 @@ class ReviseExecutor:
 
     @staticmethod
     def singleDelete(target):
+        """ delete the target
+        """
+
+        # Find out the actual target
+        target = ReviseExecutor.TARGET_FINDER.find(target)
+
         execute = " DELETE  " + target
 
         if os.path.exists(target):

@@ -92,8 +92,9 @@ class TargetFinder:
         return target
 
 
-    def find(self, target):
+    def find(self, target, loosely=False):
         """ Find the target out in the current directory.
+            Set loosely to be True to find file base name in all directory
         """
 
         # Firstly, check whether target already exists
@@ -107,7 +108,10 @@ class TargetFinder:
             return target
 
         # Thirdly, still not find the target, search in all sub directories
-        return self.__findInAll(target)
+        if loosely:
+            return self.__findInAll(target)
+        else:
+            return target
 
 
 # End of class TargetFinder
