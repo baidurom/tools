@@ -59,8 +59,15 @@ def preparePatchall():
 
 
     # Phase 3: make out the change list
-    ChangeList(Config.AOSP_ROOT, Config.BOSP_ROOT, Config.PATCHALL_XML).make(force=False)
+    hasChange = ChangeList(Config.AOSP_ROOT, Config.BOSP_ROOT, Config.PATCHALL_XML).make(force=False)
 
+    # Phase 4: record last head
+    Utils.recordLastHead()
+
+    if not hasChange:
+        print " "
+        print Paint.green(" No changes between %s and %s, nothing to patch." % (Config.AOSP_ROOT, Config.BOSP_ROOT))
+        sys.exit(0)
 
 def prepareUpgrade():
     """ Prepare precondition of upgrade
@@ -94,7 +101,12 @@ def prepareUpgrade():
         prepareBOSP(Config.BOSP_ROOT)
 
     # Phase 3: make out the change list
-    ChangeList(Config.LAST_BOSP_ROOT, Config.BOSP_ROOT, Config.UPGRADE_XML).make(force=True)
+    hasChange = ChangeList(Config.LAST_BOSP_ROOT, Config.BOSP_ROOT, Config.UPGRADE_XML).make(force=True)
+
+    if not hasChange:
+        print " "
+        print Paint.green(" Already the newest.")
+        sys.exit(0)
 
 
 def preparePorting(argv):
@@ -119,7 +131,12 @@ def preparePorting(argv):
 
     (olderRoot, newerRoot) = Porting(device).prepare(commit1, commit2)
 
-    ChangeList(olderRoot, newerRoot, Config.PORTING_XML).make(force=True)
+    hasChange = ChangeList(olderRoot, newerRoot, Config.PORTING_XML).make(force=True)
+
+    if not hasChange:
+        print " "
+        print Paint.green(" No changes between %s and %s, nothing to porting." % (olderRoot, newerRoot))
+        sys.exit(0)
 
     return (olderRoot, newerRoot)
 
@@ -137,25 +154,25 @@ def prepareBOSP(bospDst, force=True):
     """ Prepare BOSP, set force to be False to not generate again if exists.
     """
 
+    if force:
+        subp = Utils.run(["rm", "-rf", bospDst], stdout=subprocess.PIPE)
+        subp.wait()
+
     if not os.path.exists(bospDst):
         os.makedirs(bospDst)
 
     Log.i(TAG, "Generating %s from %s" %(bospDst, DEVICE_BASE))
 
     src = os.path.join(DEVICE_BASE, "framework-res")
-    dst = os.path.join(bospDst,     "framework-res")
-    if force or not os.path.exists(dst):
-        subp = Utils.run(["cp", "-r", "-u", src, bospDst], stdout=subprocess.PIPE)
-        subp.wait()
+    subp = Utils.run(["cp", "-r", src, bospDst], stdout=subprocess.PIPE)
+    subp.wait()
 
     for jarname in FRAMEWORK_JARS:
         jarname += ".out"
         src = os.path.join(DEVICE_BASE, jarname)
-        dst = os.path.join(bospDst,     jarname)
         if os.path.exists(src):
-            if force or not os.path.exists(dst):
-                subp = Utils.run(["cp", "-r", "-u", src, bospDst], stdout=subprocess.PIPE)
-                subp.wait()
+            subp = Utils.run(["cp", "-r", src, bospDst], stdout=subprocess.PIPE)
+            subp.wait()
 
     Utils.combineFrameworkPartitions(bospDst)
 
@@ -460,6 +477,11 @@ class Utils:
 
 
     @staticmethod
+    def recordLastHead():
+        subp = Utils.run([Utils.DEVICE_BASE_TOOL, "--recd"], stdout=subprocess.PIPE)
+        Utils.printSubprocessOut(subp)
+
+    @staticmethod
     def setToLastHead():
         subp = Utils.run([Utils.DEVICE_BASE_TOOL, "--last"], stdout=subprocess.PIPE)
         Utils.printSubprocessOut(subp)
@@ -484,7 +506,7 @@ class Utils:
             buff = subp.stdout.readline().strip('\n')
             if buff == '' and subp.poll() != None:
                 break
-    
+
             Log.i(TAG, buff)
 
 # End of class Utils

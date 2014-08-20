@@ -44,13 +44,13 @@ class ChangeList:
 
         if not force and os.path.exists(ChangeList.PATCH_XML):
             Log.d(TAG, "Using the existing %s" % ChangeList.PATCH_XML)
-            return
+            return True
 
         cmd = "diff -rq %s %s" % (commands.mkarg(ChangeList.OLDER_ROOT), commands.mkarg(ChangeList.NEWER_ROOT))
         output = commands.getoutput(cmd)
         Log.d(TAG, output)
-        ChangeList.xmlFrom(output)
-        pass
+        hasChange = ChangeList.xmlFrom(output)
+        return hasChange
 
     @staticmethod
     def xmlFrom(diffout):
@@ -64,6 +64,8 @@ class ChangeList:
         # Named group REGEX of newer
         onlyRE   = re.compile("Only in (?P<path>.*): (?P<name>.*)")
 
+        hasChange = False
+
         lines = diffout.split("\n")
         for line in lines:
             match = differRE.search(line)
@@ -74,6 +76,8 @@ class ChangeList:
                            {'action' : 'MERGE',
                             'target' : target})
                 feature.append(revise)
+
+                hasChange = True
                 continue
 
             match = onlyRE.search(line)
@@ -90,12 +94,17 @@ class ChangeList:
                            {'action' : action,
                             'target' : target})
                 feature.append(revise)
+
+                hasChange = True
                 continue
 
         tree = ET.ElementTree(root)
         # Using pretty print to format XML
         tree.write(ChangeList.PATCH_XML, pretty_print=True,
                xml_declaration=True, encoding='utf-8')
+
+        Log.i(TAG, "%s is generated" % ChangeList.PATCH_XML)
+        return hasChange
 
     def show(self):
         if not os.path.exists(ChangeList.PATCH_XML):

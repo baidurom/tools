@@ -21,6 +21,7 @@ function usage()
 	echo "      OPTIONS:                                       "
 	echo "        --last:   set to the last head.              "
 	echo "        --orig:   set to the origin remote head.     "
+	echo "        --recd:   just record the last head          "
     echo "                                                     "
 	echo " You shou use --last and --orig sequencely as a pair."
 }
@@ -63,6 +64,17 @@ function check_update()
 }
 
 
+function record_last_head()
+{
+
+	cd ${BASE_DEVICE}
+
+	git rev-parse HEAD > ${LAST_HEAD}
+
+	cd - > /dev/null
+}
+
+
 function set_last_head()
 {
     check_update
@@ -72,7 +84,7 @@ function set_last_head()
 	local commit=`cat ${LAST_HEAD}`
 	git reset --hard ${commit}
 
-	echo "the last commit is ${commit}"
+	echo "The last commit is ${commit}"
 
 	cd - > /dev/null
 }
@@ -86,11 +98,10 @@ function set_orig_head()
     local commit=`cat ${ORIG_HEAD}`
     git reset --hard ${commit}
 
-    echo "the origin commit is ${commit}"
+    echo "The origin commit is ${commit}"
 
 	cd - > /dev/null
 }
-
 
 
 ### Entry ###
@@ -100,3 +111,4 @@ function set_orig_head()
 
 [ "$1" == "--orig" ] && set_orig_head && exit 0
 
+[ "$1" == "--recd" ] && record_last_head && exit 0
