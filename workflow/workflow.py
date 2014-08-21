@@ -32,6 +32,7 @@ class Phase:
 
         self.tag = tag
         self.action = tag.get('action')
+        self.next = None
         self.cmds = []
 
         for child in tag.getchildren():
