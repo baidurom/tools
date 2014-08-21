@@ -13,9 +13,10 @@ Usage: $shell changelist.py [OPTIONS]
 __author__ = 'duanqz@gmail.com'
 
 
-import commands
-import re
+import shutil
 import os, sys
+import subprocess
+import tempfile
 
 from config import Config
 from formatters.log import Log
@@ -46,67 +47,96 @@ class ChangeList:
             Log.d(TAG, "Using the existing %s" % ChangeList.PATCH_XML)
             return True
 
-        cmd = "diff -rq %s %s" % (commands.mkarg(ChangeList.OLDER_ROOT), commands.mkarg(ChangeList.NEWER_ROOT))
-        output = commands.getoutput(cmd)
-        Log.d(TAG, output)
-        hasChange = ChangeList.xmlFrom(output)
+        hasChange = ChangeList.XMLFromDiff()
+
         return hasChange
 
-    @staticmethod
-    def xmlFrom(diffout):
-        root = ET.Element('features')
-        feature = ET.Element('feature', 
-                   {'description' : 'These files are diff from %s and %s'%(ChangeList.OLDER_ROOT, ChangeList.NEWER_ROOT)})
-        root.append(feature)
 
-        # Named group REGEX of differ 
-        differRE = re.compile("Files (?P<older>.*) and (?P<newer>.*) differ")
-        # Named group REGEX of newer
-        onlyRE   = re.compile("Only in (?P<path>.*): (?P<name>.*)")
+    @staticmethod
+    def XMLFromDiff():
+        (root, feature) = ChangeList.createXML()
+
+        tmp = ChangeList.fuse()
 
         hasChange = False
 
-        lines = diffout.split("\n")
-        for line in lines:
-            match = differRE.search(line)
-            if match != None:
-                target = os.path.relpath(match.group("newer"), ChangeList.NEWER_ROOT)
+        for (dirpath, dirnames, filenames) in os.walk(tmp):
 
-                revise = ET.Element('revise',
-                           {'action' : 'MERGE',
-                            'target' : target})
-                feature.append(revise)
+            dirnames = dirnames # No use, just avoid of warning
 
-                hasChange = True
-                continue
+            for filename in filenames:
+                path =  os.path.join(dirpath, filename)
 
-            match = onlyRE.search(line)
-            if match != None:
-                fullpath= os.path.join(match.group("path"), match.group("name"))
-                if fullpath.startswith(ChangeList.NEWER_ROOT):
-                    action = "ADD"
-                    target = os.path.relpath(fullpath, ChangeList.NEWER_ROOT)
-                elif fullpath.startswith(ChangeList.OLDER_ROOT):
-                    action = "DELETE"
-                    target = os.path.relpath(fullpath, ChangeList.OLDER_ROOT)
+                target = os.path.relpath(path, tmp)
+                older  = os.path.join(ChangeList.OLDER_ROOT,  target)
+                newer  = os.path.join(ChangeList.NEWER_ROOT,  target)
 
-                revise = ET.Element('revise',
-                           {'action' : action,
-                            'target' : target})
-                feature.append(revise)
+                olderExists = os.path.exists(older)
+                newerExists = os.path.exists(newer)
+                if olderExists and newerExists:
+                    subp = subprocess.Popen(["diff",  older, newer], stdout=subprocess.PIPE)
+                    subp.wait()
+                    # 0 if inputs are the same
+                    # 1 if different
+                    # 2 if trouble, we do not handle this case
+                    if subp.returncode == 1:
+                        ChangeList.appendReivse(feature, "MERGE", target)
+                        hasChange = True
+                elif olderExists:
+                    ChangeList.appendReivse(feature, "DELETE", target)
+                    hasChange = True
+                elif newerExists:
+                    ChangeList.appendReivse(feature, "ADD", target)
+                    hasChange = True
 
-                hasChange = True
-                continue
+        shutil.rmtree(tmp)
 
+        ChangeList.writeXML(root)
+
+        return hasChange
+
+
+    @staticmethod
+    def fuse():
+        tmp = tempfile.mktemp()
+        os.makedirs(tmp)
+        for subdir in os.listdir(ChangeList.OLDER_ROOT):
+            src = os.path.join(ChangeList.OLDER_ROOT, subdir)
+            subprocess.Popen(["cp", "-frp", src, tmp], stdout=subprocess.PIPE).wait()
+
+        for subdir in os.listdir(ChangeList.NEWER_ROOT):
+            src = os.path.join(ChangeList.NEWER_ROOT, subdir)
+            subprocess.Popen(["cp", "-frp", src, tmp], stdout=subprocess.PIPE).wait()
+
+        return tmp
+
+
+    @staticmethod
+    def createXML():
+        root = ET.Element('features')
+        feature = ET.Element('feature',
+                   {'description' : 'These files are diff from %s and %s' %(ChangeList.OLDER_ROOT, ChangeList.NEWER_ROOT)})
+        root.append(feature)
+
+        return (root, feature)
+
+
+    @staticmethod
+    def writeXML(root):
         tree = ET.ElementTree(root)
-
-        # Using pretty print to format XML
         tree.write(ChangeList.PATCH_XML, #pretty_print=True,
                xml_declaration=True, encoding='utf-8')
 
-
         Log.i(TAG, "%s is generated" % ChangeList.PATCH_XML)
-        return hasChange
+
+
+    @staticmethod
+    def appendReivse(feature, action, target):
+        revise = ET.Element('revise',
+                           {'action' : action,
+                            'target' : target})
+        feature.append(revise)
+
 
     def show(self):
         if not os.path.exists(ChangeList.PATCH_XML):

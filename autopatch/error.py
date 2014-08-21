@@ -16,6 +16,7 @@ class Error:
     FILENOTFOUND_STATISTIC = {}
 
     TOTAL_CONFLICTS = 0
+    CONFLICT_FILE_NUM  = 0
     CONFLICT_STATISTIC = {}
 
 
@@ -42,6 +43,7 @@ class Error:
 
         # Increment total conflicts        
         Error.TOTAL_CONFLICTS += conflictNum;
+        Error.CONFLICT_FILE_NUM += 1
 
         # Increment conflicts of each part
         key = Error.getStatisticKey(target)
@@ -75,7 +77,7 @@ class Error:
             print "%3d conflicts in %s " % (Error.CONFLICT_STATISTIC[key], key)
 
         if Error.TOTAL_CONFLICTS > 0:
-            print Paint.bold("%3d conflicts totally, go through the reject files in 'out/reject' to find them out" % Error.TOTAL_CONFLICTS)
+            print Paint.bold("%3d conflicts in %d files, go through the reject files in 'out/reject' to find them out" % (Error.TOTAL_CONFLICTS, Error.CONFLICT_FILE_NUM))
             print Paint.red("\n  Ask for advice? Please type 'coron help CONFLICTS_HAPPENED' \n")
 
 

@@ -215,6 +215,8 @@ class Porting:
 
         dirname = "%s_%s_%s" % (os.path.basename(self.devicePath), suffix, commit)
         dstDir = os.path.join(Config.AUTOPATCH, dirname)
+        if not os.path.exists(dstDir):
+            os.makedirs(dstDir)
 
         Log.i(TAG, "Prepare %s from %s" % (dstDir, self.devicePath))
         # Copy changed items from source
