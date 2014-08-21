@@ -20,12 +20,12 @@ import os, sys
 from config import Config
 from formatters.log import Log
 
-# try:
-#     import xml.etree.cElementTree as ET
-# except ImportError:
-#     import xml.etree.ElementTree as ET
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
 
-from lxml import etree as ET
+#from lxml import etree as ET
 
 TAG="changelist"
 
@@ -99,9 +99,11 @@ class ChangeList:
                 continue
 
         tree = ET.ElementTree(root)
+
         # Using pretty print to format XML
-        tree.write(ChangeList.PATCH_XML, pretty_print=True,
+        tree.write(ChangeList.PATCH_XML, #pretty_print=True,
                xml_declaration=True, encoding='utf-8')
+
 
         Log.i(TAG, "%s is generated" % ChangeList.PATCH_XML)
         return hasChange
