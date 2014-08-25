@@ -184,6 +184,9 @@ class Format():
                 (commands.mkarg(origFile), commands.mkarg(noLineFile))
         commands.getstatusoutput(cmd)
 
+        if not os.path.exists(noLineFile):
+            return None
+
         # Generate line patch
         linesPatch = origFile + ".linepatch"
         cmd = "diff -B -u %s %s > %s" % \

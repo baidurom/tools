@@ -420,6 +420,13 @@ class Utils:
             shutil.move(os.path.join(temp, "SYSTEM"), os.path.join(temp, "system"))
 
         dirname = os.path.join(temp, "system/framework")
+
+        Log.i(TAG, "decoding framework-res.apk")
+        jarpath = os.path.join(dirname, "framework-res.apk")
+        jarout  = os.path.join(out, "framework-res")
+        subp = Utils.run(["apktool", "d", "-f", jarpath, jarout], stdout=subprocess.PIPE)
+        Utils.printSubprocessOut(subp)
+
         for jarname in FRAMEWORK_JARS:
             jarpath = os.path.join(dirname, jarname)
             if os.path.exists(jarpath):

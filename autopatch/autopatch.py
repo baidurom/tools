@@ -126,7 +126,7 @@ class ReviseExecutor:
         elif self.mOlder.endswith("*"): self.handleRegex(self.mOlder)
 
         else:
-            print Paint.red("  Can not handle : %s" % self.mTarget)
+            print Paint.red("  Can not handle: %s" % self.mTarget)
 
 
     def handleDirectory(self, directory):
