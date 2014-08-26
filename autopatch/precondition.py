@@ -156,7 +156,7 @@ def prepareBOSP(bospDst, force=True):
 
     if force:
         subp = Utils.run(["rm", "-rf", bospDst], stdout=subprocess.PIPE)
-        subp.wait()
+        subp.communicate()
 
     if not os.path.exists(bospDst):
         os.makedirs(bospDst)
@@ -165,14 +165,14 @@ def prepareBOSP(bospDst, force=True):
 
     src = os.path.join(DEVICE_BASE, "framework-res")
     subp = Utils.run(["cp", "-r", src, bospDst], stdout=subprocess.PIPE)
-    subp.wait()
+    subp.communicate()
 
     for jarname in FRAMEWORK_JARS:
         jarname += ".out"
         src = os.path.join(DEVICE_BASE, jarname)
         if os.path.exists(src):
             subp = Utils.run(["cp", "-r", src, bospDst], stdout=subprocess.PIPE)
-            subp.wait()
+            subp.communicate()
 
     Utils.combineFrameworkPartitions(bospDst)
 
@@ -226,7 +226,7 @@ class Porting:
             if os.path.exists(src):
                 dirname = os.path.dirname(dst)
                 if not os.path.exists(dirname): os.makedirs(dirname)
-                Utils.run(["cp", "-u", src, dst], stdout=subprocess.PIPE).wait()
+                Utils.run(["cp", "-u", src, dst], stdout=subprocess.PIPE).communicate()
 
         return dstDir
 
@@ -413,7 +413,7 @@ class Utils:
         temp = tempfile.mkdtemp()
         Log.i(TAG, "unzip %s to %s" % (deodexZip, temp))
         subp = Utils.run(["unzip", "-q", "-o", deodexZip, "-d", temp], stdout=subprocess.PIPE)
-        subp.wait()
+        subp.communicate()
 
         # Format path
         if os.path.join(os.path.join(temp, "SYSTEM")):
@@ -481,7 +481,7 @@ class Utils:
                 src = os.path.join(partitionPath, "smali")
                 dst = os.path.join(frameworkDir, "framework.jar.out")
                 subp = Utils.run(["cp", "-r",  src, dst], stdout=subprocess.PIPE)
-                subp.wait()
+                subp.communicate()
                 shutil.rmtree(partitionPath)
 
 

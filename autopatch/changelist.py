@@ -75,7 +75,7 @@ class ChangeList:
                 newerExists = os.path.exists(newer)
                 if olderExists and newerExists:
                     subp = subprocess.Popen(["diff",  older, newer], stdout=subprocess.PIPE)
-                    subp.wait()
+                    subp.communicate()
                     # 0 if inputs are the same
                     # 1 if different
                     # 2 if trouble, we do not handle this case
@@ -102,11 +102,11 @@ class ChangeList:
         os.makedirs(tmp)
         for subdir in os.listdir(ChangeList.OLDER_ROOT):
             src = os.path.join(ChangeList.OLDER_ROOT, subdir)
-            subprocess.Popen(["cp", "-frp", src, tmp], stdout=subprocess.PIPE).wait()
+            subprocess.Popen(["cp", "-frp", src, tmp], stdout=subprocess.PIPE).communicate()
 
         for subdir in os.listdir(ChangeList.NEWER_ROOT):
             src = os.path.join(ChangeList.NEWER_ROOT, subdir)
-            subprocess.Popen(["cp", "-frp", src, tmp], stdout=subprocess.PIPE).wait()
+            subprocess.Popen(["cp", "-frp", src, tmp], stdout=subprocess.PIPE).communicate()
 
         return tmp
 
