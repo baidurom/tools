@@ -9,6 +9,7 @@ from xml.dom import minidom
 import sys
 import re
 import os
+import android_manifest
 
 reload(sys)
 sys.setdefaultencoding("utf-8")
@@ -52,12 +53,15 @@ class idtoname(object):
         root = publicXml.documentElement
         idList = {}
 
+        pkgName = android_manifest.getPackageNameFromPublicXml(xmlPath)
+        Log.i("package name: %s" %pkgName)
+        pkgName = pkgName + ':'
         for item in root.childNodes:
             if item.nodeType == minidom.Node.ELEMENT_NODE:
                 itemType = item.getAttribute("type")
                 itemName = item.getAttribute("name")
                 itemId = item.getAttribute("id").replace(r'0x0', r'0x')
-                idList[itemId] = "%s@%s" % (itemType, itemName)
+                idList[itemId] = "%s%s@%s" % (pkgName, itemType, itemName)
 
         return idList
 
@@ -104,6 +108,10 @@ class Log:
     @staticmethod
     def d(message):
         if Log.DEBUG: print message
+
+    @staticmethod
+    def i(message):
+        print message
 
 def main():
     print "start change id to name...."

@@ -26,7 +26,7 @@ target=$2
 src_basename=`basename $src`
 CHECK_SU=$progdir/check-su
 pcp=$progdir/phone-cp
-ptmp_su_push=/data/local/tmp/su_push
+ptmp_su_pull=/data/local/tmp/su_pull_tmp
 phone_cp=/data/local/tmp/phone-cp
 
 if [ x"$target" == x ];then
@@ -45,7 +45,7 @@ fi
 adb push $pcp $phone_cp
 adb shell chmod 777 $phone_cp
 
-echo "begin copy $src to /sdcard/su-pull-tmp/$src_basename"
-echo "su -c \"rm -rf /sdcard/su-pull-tmp; mkdir -p /sdcard/su-pull-tmp; $phone_cp $src /sdcard/su-pull-tmp/$src_basename; chmod 777 /sdcard/su-pull-tmp/$src_basename\"; exit" | adb shell
-adb pull /sdcard/su-pull-tmp/$src_basename $target
-echo "su -c \"rm -rf /sdcard/su-pull-tmp\"; exit" | adb shell
+echo "begin copy $src to $ptmp_su_pull/$src_basename"
+echo "su -c \"rm -rf $ptmp_su_pull; mkdir -p $ptmp_su_pull; $phone_cp $src $ptmp_su_pull/$src_basename; chmod 777 $ptmp_su_pull/$src_basename\"; exit" | adb shell
+adb pull $ptmp_su_pull/$src_basename $target
+echo "su -c \"rm -rf $ptmp_su_pull\"; exit" | adb shell

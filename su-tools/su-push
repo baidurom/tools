@@ -40,14 +40,21 @@ if [ -f $src ] || [ -d $src ]; then
 	
 	echo "adb push $src $ptmp_su_push"
 
-	adb shell rm -r $ptmp_su_push
+	adb shell rm -rf $ptmp_su_push
+	adb shell mkdir -p $ptmp_su_push
 	adb push $src $ptmp_su_push
 	adb push $pcp $phone_cp
 	adb shell chmod 777 $phone_cp
 
-	if [[ $target == "/system/"* ]];then
-		echo "su -c \"mount -o remount,rw /system; $phone_cp $ptmp_su_push $target;mount -o remount,ro /system\"; exit $?" | adb shell
+	if [ -d $src ]; then
+		ptmp_src=$ptmp_su_push
 	else
-		echo "su -c \"$phone_cp $ptmp_su_push $target;\"; exit $?" | adb shell
+		ptmp_src=$ptmp_su_push/$src_basename
+	fi
+
+	if [[ $target == "/system/"* ]];then
+		echo "su -c \"mount -o remount,rw /system; $phone_cp $ptmp_src $target;mount -o remount,ro /system\"; exit $?" | adb shell
+	else
+		echo "su -c \"$phone_cp $ptmp_src $target;\"; exit $?" | adb shell
 	fi
 fi
