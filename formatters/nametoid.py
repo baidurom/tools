@@ -115,7 +115,9 @@ def main():
     if len(sys.argv) == 3:
         nametoid(sys.argv[1], sys.argv[2]).nametoid()
     else:
-        print "USAGE: nametoid.py -add/-map public_ori.xml public_baidu.xml out1.txt [out2.txt]"
+        print "USAGE: nametoid public.xml DIRECTORY"
+        print "eg: nametoid public.xml framework.jar.out"
+        print "change all of type@name in framework.jar.out to resource id"
         sys.exit(1)
 
     print ">>> change the name to id done"

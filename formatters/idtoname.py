@@ -110,8 +110,8 @@ def main():
     if len(sys.argv) == 3:
         idtoname(sys.argv[1], sys.argv[2]).idtoname()
     else:
-        print "USAGE: idtoname.py public.xml DIRECTORY"
-        print "eg: idtoname.py public.xml framework.jar.out"
+        print "USAGE: idtoname public.xml DIRECTORY"
+        print "eg: idtoname public.xml framework.jar.out"
         print "change all of the id in framework.jar.out to type@name"
         sys.exit(1)
 
