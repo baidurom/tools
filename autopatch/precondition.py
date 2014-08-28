@@ -395,7 +395,7 @@ class Utils:
     DEVICE_BASE_TOOL = os.path.join(os.path.dirname(__file__), "device_base.sh")
 
     PARTITIONS=("secondary_framework.jar.out", "secondary-framework.jar.out",
-                "framework2.jar.out", "framework-ext.jar.out")
+                "framework2.jar.out", "framework-ext.jar.out", "framework_ext.jar.out")
 
     @staticmethod
     def decode(baiduZip, out):
