@@ -31,7 +31,7 @@ except KeyError:
 
 FRAMEWORK_JARS = ("framework.jar", "services.jar", "telephony-common.jar",
                   "secondary-framework.jar", "secondary_framework.jar", "framework2.jar",
-                  "mediatek-framework.jar", "framework-ext.jar", "framewor_ext.jar",
+                  "mediatek-framework.jar", "framework-ext.jar", "framework_ext.jar",
                   "android.policy.jar",
                   "pm.jar")
 
