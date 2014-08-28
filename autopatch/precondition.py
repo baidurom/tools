@@ -78,6 +78,8 @@ def prepareUpgrade():
     lastBaiduZip = os.path.join(Config.PRJ_ROOT, "baidu/last_baidu.zip")
     baiduZip     = os.path.join(Config.PRJ_ROOT, "baidu/baidu.zip")
 
+    baseAutopatch    = os.path.join(DEVICE_BASE, "autopatch")
+
     if os.path.exists(lastBaiduZip) and os.path.exists(baiduZip):
 
         # Phase 1: prepare LAST_BOSP from last_baidu.zip
@@ -87,6 +89,14 @@ def prepareUpgrade():
 
         # Phase 2: prepare BOSP from baidu.zip
         Utils.decode(baiduZip, Config.BOSP_ROOT)
+
+    elif os.path.exists(baseAutopatch):
+        prjAutopatch = os.path.join(Config.PRJ_ROOT, "autopatch")
+        if os.path.exists(prjAutopatch):
+            shutil.rmtree(prjAutopatch)
+
+        Log.i(TAG, "Generating %s from %s" % (prjAutopatch, baseAutopatch))
+        shutil.copytree(baseAutopatch, prjAutopatch)
 
     else:
 

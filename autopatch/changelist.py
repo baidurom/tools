@@ -18,8 +18,11 @@ import os, sys
 import subprocess
 import tempfile
 
+import xml.dom.minidom
+
 from config import Config
 from formatters.log import Log
+
 
 try:
     import xml.etree.cElementTree as ET
@@ -54,7 +57,7 @@ class ChangeList:
 
     @staticmethod
     def XMLFromDiff():
-        (root, feature) = ChangeList.createXML()
+        (dom, feature) = ChangeList.createXML()
 
         tmp = ChangeList.fuse()
 
@@ -80,18 +83,18 @@ class ChangeList:
                     # 1 if different
                     # 2 if trouble, we do not handle this case
                     if subp.returncode == 1:
-                        ChangeList.appendReivse(feature, "MERGE", target)
+                        ChangeList.appendReivse(dom, feature, "MERGE", target)
                         hasChange = True
                 elif olderExists:
-                    ChangeList.appendReivse(feature, "DELETE", target)
+                    ChangeList.appendReivse(dom, feature, "DELETE", target)
                     hasChange = True
                 elif newerExists:
-                    ChangeList.appendReivse(feature, "ADD", target)
+                    ChangeList.appendReivse(dom, feature, "ADD", target)
                     hasChange = True
 
         shutil.rmtree(tmp)
 
-        ChangeList.writeXML(root)
+        ChangeList.writeXML(dom)
 
         return hasChange
 
@@ -113,29 +116,45 @@ class ChangeList:
 
     @staticmethod
     def createXML():
-        root = ET.Element('features')
-        feature = ET.Element('feature',
-                   {'description' : 'These files are diff from %s and %s' %(ChangeList.OLDER_ROOT, ChangeList.NEWER_ROOT)})
-        root.append(feature)
+#        root = ET.Element('features')
+#        feature = ET.Element('feature',
+#                   {'description' : 'These files are diff from %s and %s' %(ChangeList.OLDER_ROOT, ChangeList.NEWER_ROOT)})
+#        root.append(feature)
 
-        return (root, feature)
+        impl = xml.dom.minidom.getDOMImplementation()
+        dom = impl.createDocument(None, "features", None)
+        root = dom.documentElement
+        feature = dom.createElement("feature")
+        feature.setAttribute("description", "These files are diff from %s and %s" % (ChangeList.OLDER_ROOT, ChangeList.NEWER_ROOT))
+        root.appendChild(feature)
+
+        return (dom, feature)
 
 
     @staticmethod
-    def writeXML(root):
-        tree = ET.ElementTree(root)
-        tree.write(ChangeList.PATCH_XML, #pretty_print=True,
-               xml_declaration=True, encoding='utf-8')
+    def writeXML(dom):
+#        tree = ET.ElementTree(root)
+#        tree.write(ChangeList.PATCH_XML, #pretty_print=True,
+#               xml_declaration=True, encoding='utf-8')
+
+        f = open(ChangeList.PATCH_XML, 'w')
+        dom.writexml(f, addindent='  ', newl='\n', encoding='utf-8')
+        f.close()
 
         Log.i(TAG, "%s is generated" % ChangeList.PATCH_XML)
 
 
     @staticmethod
-    def appendReivse(feature, action, target):
-        revise = ET.Element('revise',
-                           {'action' : action,
-                            'target' : target})
-        feature.append(revise)
+    def appendReivse(dom, feature, action, target):
+#        revise = ET.Element('revise',
+#                           {'action' : action,
+#                            'target' : target})
+#
+        revise = dom.createElement("revise")
+        revise.setAttribute("action", action)
+        revise.setAttribute("target", target)
+
+        feature.appendChild(revise)
 
 
     def show(self):

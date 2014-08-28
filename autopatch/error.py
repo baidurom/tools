@@ -104,8 +104,12 @@ class Error:
 
     @staticmethod
     def createAllRejects():
+        if not os.path.exists(Config.REJ_ROOT):
+            os.makedirs(Config.REJ_ROOT)
+
         allrejects = os.path.join(Config.REJ_ROOT, "allrejects.txt")
         handle = open(allrejects, "w")
         handle.write("\n".join(Error.FAILED_LIST))
         handle.close()
+
 

@@ -54,7 +54,7 @@ class idtoname(object):
         idList = {}
 
         pkgName = android_manifest.getPackageNameFromPublicXml(xmlPath)
-        Log.i("package name: %s" %pkgName)
+        Log.d("package name: %s" %pkgName)
         pkgName = pkgName + ':'
         for item in root.childNodes:
             if item.nodeType == minidom.Node.ELEMENT_NODE:
