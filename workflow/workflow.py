@@ -229,7 +229,7 @@ class Shell:
         # GNU make exits with a status of zero if all makefiles were successfully parsed and no targets that were built failed.
         # A status of one will be returned if the -q flag was used and make  determines that a target needs to be rebuilt.
         # A status of two will be returned if any errors were encountered.
-        errRegex = re.compile("^make: .* Error (?P<errNo>.*)")
+        errRegex = re.compile("^make: .* Error (?P<errNo>(?!.*(ignored)).*)")
         match = errRegex.search(output)
         if match != None:
             Log.d(TAG, "Shell.parseHelpStatus() Target in GNU make")

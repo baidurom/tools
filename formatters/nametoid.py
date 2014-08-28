@@ -6,11 +6,10 @@ Created on 2012-12-25
 @author: jock
 '''
 from xml.dom import minidom
-import codecs
 import sys
-import traceback
 import re
 import os
+import android_manifest
 
 reload(sys)
 sys.setdefaultencoding("utf-8")
@@ -54,12 +53,17 @@ class nametoid(object):
         root = publicXml.documentElement
         idList = {}
 
+        pkgName = android_manifest.getPackageNameFromPublicXml(xmlPath)
+        Log.i("package name: %s" %pkgName)
+        pkgName = pkgName + ':'
         for item in root.childNodes:
             if item.nodeType == minidom.Node.ELEMENT_NODE:
                 itemType = item.getAttribute("type")
                 itemName = item.getAttribute("name")
                 itemId = item.getAttribute("id").replace(r'0x0', r'0x')
-                idList["%s@%s" % (itemType, itemName)] = itemId
+                idList["%s%s@%s" % (pkgName, itemType, itemName)] = itemId
+                if pkgName == "android:":
+                    idList["%s@%s" % (itemType, itemName)] = itemId
 
         return idList
 
@@ -70,8 +74,8 @@ class nametoid(object):
         return arrayId.replace('0x0', '0x')
 
     def getArrayStr(self, arrayId):
-         arrayStr = '0x%st 0x%st 0x%st 0x%st' % (arrayId[-2:], arrayId[-4:-2], arrayId[-6:-4], arrayId[-7:-6])
-         return arrayStr.replace('0x0', '0x')
+        arrayStr = '0x%st 0x%st 0x%st 0x%st' % (arrayId[-2:], arrayId[-4:-2], arrayId[-6:-4], arrayId[-7:-6])
+        return arrayStr.replace('0x0', '0x')
 
     def nametoid(self):
         normalNameRule = re.compile(r'#[^ \t\n]*@[^ \t\n]*#t')
@@ -110,6 +114,10 @@ class Log:
     @staticmethod
     def d(message):
         if Log.DEBUG: print message
+
+    @staticmethod
+    def i(message):
+        print message
 
 def main():
     if len(sys.argv) == 3:
