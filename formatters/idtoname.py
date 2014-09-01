@@ -72,8 +72,8 @@ class idtoname(object):
         return arrayId.replace('0x0', '0x')
 
     def idtoname(self):
-        normalIdRule = re.compile(r'0x[1-9][0-1][0-9a-f]{5}')
-        arrayIdRule = re.compile(r'(?:0x[0-9a-f]{1,2}t ){3}0x[1-9]t')
+        normalIdRule = re.compile(r'0x(?:[1-9]|7f)[0-1][0-9a-f]{5}')
+        arrayIdRule = re.compile(r'(?:0x[0-9a-f]{1,2}t ){3}0x(?:[1-9]|7f)t')
 
         for smaliFile in self.smaliFileList:
             #print "start modify: %s" % smaliFile
