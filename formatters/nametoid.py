@@ -74,7 +74,10 @@ class nametoid(object):
         return arrayId.replace('0x0', '0x')
 
     def getArrayStr(self, arrayId):
-        arrayStr = '0x%st 0x%st 0x%st 0x%st' % (arrayId[-2:], arrayId[-4:-2], arrayId[-6:-4], arrayId[-7:-6])
+        if cmp(arrayId[-8], "x") == 0:
+            arrayStr = '0x%st 0x%st 0x%st 0x%st' % (arrayId[-2:], arrayId[-4:-2], arrayId[-6:-4], arrayId[-7:-6])
+        else:
+            arrayStr = '0x%st 0x%st 0x%st 0x%st' % (arrayId[-2:], arrayId[-4:-2], arrayId[-6:-4], arrayId[-8:-6])
         return arrayStr.replace('0x0', '0x')
 
     def nametoid(self):

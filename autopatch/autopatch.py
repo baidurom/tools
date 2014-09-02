@@ -29,7 +29,7 @@ from target_finder import TargetFinder
 from config import Config
 from error import Error
 from rejector import Rejector
-from precondition import preparePatchall, prepareUpgrade, preparePorting
+from precondition import Prepare
 
 from formatters.format import Format
 from formatters.log import Paint
@@ -286,22 +286,29 @@ class ReviseExecutor:
 # End of class ReviseExecutor
 
 
-def patchall(loose=False):
-    if not loose: preparePatchall()
-
-    AutoPatch(Config.PRJ_ROOT, Config.AOSP_ROOT, Config.BOSP_ROOT, Config.PATCHALL_XML).run()
+class Executor:
 
 
-def upgrade(loose=False):
-    if not loose: prepareUpgrade()
-
-    AutoPatch(Config.PRJ_ROOT, Config.LAST_BOSP_ROOT, Config.BOSP_ROOT, Config.UPGRADE_XML).run()
+    def __init__(self, base):
+        Prepare.setup(base)
 
 
-def porting(argv):
-    (olderRoot, newerRoot) = preparePorting(argv)
+    def patchall(self, loose=False):
+        if not loose: Prepare.patchall()
 
-    AutoPatch(Config.PRJ_ROOT, olderRoot, newerRoot, Config.PORTING_XML).run()
+        AutoPatch(Config.PRJ_ROOT, Config.AOSP_ROOT, Config.BOSP_ROOT, Config.PATCHALL_XML).run()
+
+
+    def upgrade(self, loose=False):
+        if not loose: Prepare.upgrade()
+
+        AutoPatch(Config.PRJ_ROOT, Config.LAST_BOSP_ROOT, Config.BOSP_ROOT, Config.UPGRADE_XML).run()
+
+
+    def porting(self, argv):
+        (olderRoot, newerRoot) = Prepare.porting(argv)
+
+        AutoPatch(Config.PRJ_ROOT, olderRoot, newerRoot, Config.PORTING_XML).run()
 
 
 
@@ -310,12 +317,17 @@ if __name__ == "__main__":
     argc = len(sys.argv)
     if argc < 2:
         print __doc__
-        sys.exit(0)
+        sys.exit(1)
+
+    if argc > 2: base = sys.argv[2]
+    else:        base = "base"
+
+    exe = Executor(base)
 
     arg1 = sys.argv[1]
-    if   arg1 in ("--patchall,-p"): patchall()
-    elif arg1 in ("--upgrade, -u"): upgrade()
-    elif arg1 in ("--porting, -t"): porting(sys.argv[2:])
-    elif arg1 in ("--patchall-loose, -pl"): patchall(loose=True)
-    elif arg1 in ("--upgrade-loose,  -ul"): upgrade(loose=True)
+    if   arg1 in ("--patchall,-p"): exe.patchall()
+    elif arg1 in ("--upgrade, -u"): exe.upgrade()
+    elif arg1 in ("--porting, -t"): exe.porting(sys.argv[2:])
+    elif arg1 in ("--patchall-loose, -pl"): exe.patchall(loose=True)
+    elif arg1 in ("--upgrade-loose,  -ul"): exe.upgrade(loose=True)
 

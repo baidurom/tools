@@ -5,14 +5,9 @@
 # @author: duanqz@gmail.com
 #
 
-BASE_DEVICE=${PORT_ROOT}/devices/base
+
 PWD=`pwd`
 MY_DEVICE=`basename ${PWD}`
-
-
-LAST_HEAD="${BASE_DEVICE}/.git/${MY_DEVICE}:LAST_HEAD"
-ORIG_HEAD="${BASE_DEVICE}/.git/${MY_DEVICE}:ORIG_HEAD"
-
 
 function usage()
 {
@@ -56,7 +51,7 @@ function check_update()
         echo "already synced with remote origin"
     else
 	    echo "sync remote origin, the newest commit is ${new_orig_head}"
-        echo ${old_orig_head} > ${LAST_HEAD}
+	    echo ${old_orig_head} > ${LAST_HEAD}
 	    echo ${new_orig_head} > ${ORIG_HEAD}
     fi
 
@@ -106,6 +101,18 @@ function set_orig_head()
 
 ### Entry ###
 [ $# -lt 1 ] && usage && exit 1;
+
+if [ $# -eq 2 ]
+then
+    BASE_DEVICE=$2;
+else
+	BASE_DEVICE=${PORT_ROOT}/devices/base
+fi
+
+
+LAST_HEAD="${BASE_DEVICE}/.git/${MY_DEVICE}:LAST_HEAD"
+ORIG_HEAD="${BASE_DEVICE}/.git/${MY_DEVICE}:ORIG_HEAD"
+
 
 [ "$1" == "--last" ] && set_last_head && exit 0
 

@@ -52,7 +52,7 @@ if [ -f $src ] || [ -d $src ]; then
 		ptmp_src=$ptmp_su_push/$src_basename
 	fi
 
-	if [[ $target == "/system/"* ]];then
+	if [[ $target == "/system/"* ]] || [[ $target == "system/"* ]];then
 		echo "su -c \"mount -o remount,rw /system; $phone_cp $ptmp_src $target;mount -o remount,ro /system\"; exit $?" | adb shell
 	else
 		echo "su -c \"$phone_cp $ptmp_src $target;\"; exit $?" | adb shell

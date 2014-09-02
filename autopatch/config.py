@@ -23,6 +23,7 @@ class Config:
     # Root directory of reject files
     REJ_ROOT = os.path.join(PRJ_ROOT, "out/reject/")
 
+
 ### DIFF-PATCH Directory
     # We need to hold three directory because diff_patch.sh
     # incorporate changes from newer to older into target.

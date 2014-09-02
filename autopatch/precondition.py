@@ -24,167 +24,187 @@ from formatters.log import Log, Paint
 
 TAG="precondition"
 
-try:
-    DEVICE_BASE = os.path.join(os.environ["PORT_ROOT"], "devices/base")
-except KeyError:
-    DEVICE_BASE = os.curdir
 
-FRAMEWORK_JARS = ("framework.jar", "services.jar", "telephony-common.jar",
-                  "secondary-framework.jar", "secondary_framework.jar", "framework2.jar",
-                  "mediatek-framework.jar", "framework-ext.jar", "framework_ext.jar",
-                  "android.policy.jar",
-                  "pm.jar")
+class Prepare:
 
+    FRAMEWORK_JARS = ("framework.jar", "services.jar", "telephony-common.jar", "android.policy.jar", "pm.jar",
+                      "secondary-framework.jar", "secondary_framework.jar",
+                      "framework-ext.jar", "framework_ext.jar",
+                      "framework2.jar",
+                      "mediatek-framework.jar")
 
-def checkDeviceBaseExists():
-    if not os.path.exists(DEVICE_BASE):
-        # Not found devices/base
-        Log.e(TAG, "%s not found" % DEVICE_BASE)
-        sys.exit(155)
+    PARTITIONS     = ("secondary_framework.jar.out", "secondary-framework.jar.out",
+                      "framework-ext.jar.out", "framework_ext.jar.out",
+                      "framework2.jar.out")
 
 
-def preparePatchall():
-    """ Prepare precondition of patchall
-    """
-
-    checkDeviceBaseExists()
-
-    # Phase 1: prepare AOSP
-    prepareAOSP(Config.AOSP_ROOT)
-
-    print "  "
-
-    # Phase 2: prepare BOSP
-    prepareBOSP(Config.BOSP_ROOT)
+    DEVICE_BASE_TOOL = os.path.join(os.path.dirname(__file__), "device_base.sh")
 
 
-    # Phase 3: make out the change list
-    hasChange = ChangeList(Config.AOSP_ROOT, Config.BOSP_ROOT, Config.PATCHALL_XML).make(force=False)
+    @staticmethod
+    def setup(base):
+        Prepare.DEVICE_BASE = Prepare.getBasePath(base)
 
-    # Phase 4: record last head
-    Utils.recordLastHead()
 
-    if not hasChange:
-        print " "
-        print Paint.green(" No changes between %s and %s, nothing to patch." % (Config.AOSP_ROOT, Config.BOSP_ROOT))
-        sys.exit(0)
+    @staticmethod
+    def getBasePath(base):
+        try:
+            devices = os.path.join(os.environ["PORT_ROOT"], "devices")
+            return os.path.join(devices, base)
+        except KeyError:
+            Log.e(TAG, "device %s not found" % base)
+            sys.exit(155)
 
-def prepareUpgrade():
-    """ Prepare precondition of upgrade
-    """
 
-    checkDeviceBaseExists()
+    @staticmethod
+    def patchall():
+        """ Prepare precondition of patchall
+        """
 
-    lastBaiduZip = os.path.join(Config.PRJ_ROOT, "baidu/last_baidu.zip")
-    baiduZip     = os.path.join(Config.PRJ_ROOT, "baidu/baidu.zip")
-
-    baseAutopatch    = os.path.join(DEVICE_BASE, "autopatch")
-
-    if os.path.exists(lastBaiduZip) and os.path.exists(baiduZip):
-
-        # Phase 1: prepare LAST_BOSP from last_baidu.zip
-        Utils.decode(lastBaiduZip, Config.LAST_BOSP_ROOT)
+        # Phase 1: prepare AOSP
+        Prepare.aosp(Config.AOSP_ROOT)
 
         print "  "
 
-        # Phase 2: prepare BOSP from baidu.zip
-        Utils.decode(baiduZip, Config.BOSP_ROOT)
+        # Phase 2: prepare BOSP
+        Prepare.bosp(Config.BOSP_ROOT)
 
-    elif os.path.exists(baseAutopatch):
-        prjAutopatch = os.path.join(Config.PRJ_ROOT, "autopatch")
-        if os.path.exists(prjAutopatch):
-            shutil.rmtree(prjAutopatch)
+        # Phase 3: make out the change list
+        hasChange = ChangeList(Config.AOSP_ROOT, Config.BOSP_ROOT, Config.PATCHALL_XML).make(force=False)
 
-        Log.i(TAG, "Generating %s from %s" % (prjAutopatch, baseAutopatch))
-        shutil.copytree(baseAutopatch, prjAutopatch)
+        # Phase 4: record last head
+        Utils.recordLastHead()
 
-    else:
-
-        # Phase 1: prepare LAST_BOSP from devices/base
-        Utils.setToLastHead()
-        prepareBOSP(Config.LAST_BOSP_ROOT)
-
-        print "  "
-
-        # Phase 2: prepare BOSP from devices/base
-        Utils.setToOrigHead()
-        prepareBOSP(Config.BOSP_ROOT)
-
-    # Phase 3: make out the change list
-    hasChange = ChangeList(Config.LAST_BOSP_ROOT, Config.BOSP_ROOT, Config.UPGRADE_XML).make(force=True)
-
-    if not hasChange:
-        print " "
-        print Paint.green(" Already the newest.")
-        sys.exit(0)
+        if not hasChange:
+            print " "
+            print Paint.green(" No changes between %s and %s, nothing to patch." % (Config.AOSP_ROOT, Config.BOSP_ROOT))
+            sys.exit(0)
 
 
-def preparePorting(argv):
-    """ arg_0: device
-        arg_1: commit1 if present
-        arg_2: commit2 if present 
-    """
+    @staticmethod
+    def upgrade():
+        """ Prepare precondition of upgrade
+        """
 
-    device = commit1 = commit2 = None
-    argc = len(argv)
-    if argc > 0 : device  = argv[0]
-    if argc > 1 : commit1 = argv[1]
-    if argc > 2 : commit2 = argv[2]
+        lastBaiduZip  = os.path.join(Config.PRJ_ROOT, "baidu/last_baidu.zip")
+        baiduZip      = os.path.join(Config.PRJ_ROOT, "baidu/baidu.zip")
 
-    if device == None:
-        print "                                         "
-        print "Usage: porting device [commit1] [commit2]"
-        print "       - device should be presented      "
-        print "                                         "
+        baseAutopatch = os.path.join(Prepare.DEVICE_BASE, "autopatch")
 
-        sys.exit(1)
+        if os.path.exists(lastBaiduZip) and os.path.exists(baiduZip):
 
-    (olderRoot, newerRoot) = Porting(device).prepare(commit1, commit2)
+            # Phase 1: prepare LAST_BOSP from last_baidu.zip
+            Utils.decode(lastBaiduZip, Config.LAST_BOSP_ROOT)
 
-    hasChange = ChangeList(olderRoot, newerRoot, Config.PORTING_XML).make(force=True)
+            print "  "
 
-    if not hasChange:
-        print " "
-        print Paint.green(" No changes between %s and %s, nothing to porting." % (olderRoot, newerRoot))
-        sys.exit(0)
+            # Phase 2: prepare BOSP from baidu.zip
+            Utils.decode(baiduZip, Config.BOSP_ROOT)
 
-    return (olderRoot, newerRoot)
+        elif os.path.exists(baseAutopatch):
+            prjAutopatch = os.path.join(Config.PRJ_ROOT, "autopatch")
+            if os.path.exists(prjAutopatch):
+                shutil.rmtree(prjAutopatch)
 
-def prepareAOSP(aospDst):
+            Log.i(TAG, "Generating %s from %s" % (prjAutopatch, baseAutopatch))
+            shutil.copytree(baseAutopatch, prjAutopatch)
 
-    aospSrc = os.path.join(DEVICE_BASE, "vendor/aosp")
-    if os.path.exists(aospSrc) and not os.path.exists(aospDst):
-        Log.i(TAG, "Generating %s from %s" %(aospDst, DEVICE_BASE))
-        shutil.copytree(aospSrc, aospDst)
+        else:
 
-    Utils.combineFrameworkPartitions(aospDst)
+            # Phase 1: prepare LAST_BOSP from devices/base
+            Utils.setToLastHead()
+            Prepare.bosp(Config.LAST_BOSP_ROOT)
+
+            print "  "
+
+            # Phase 2: prepare BOSP from devices/base
+            Utils.setToOrigHead()
+            Prepare.bosp(Config.BOSP_ROOT)
+
+        # Phase 3: make out the change list
+        hasChange = ChangeList(Config.LAST_BOSP_ROOT, Config.BOSP_ROOT, Config.UPGRADE_XML).make(force=True)
+
+        if not hasChange:
+            print " "
+            print Paint.green(" Already the newest.")
+            sys.exit(0)
 
 
-def prepareBOSP(bospDst, force=True):
-    """ Prepare BOSP, set force to be False to not generate again if exists.
-    """
+    @staticmethod
+    def porting(argv):
+        """ arg_0: device
+            arg_1: commit1 if present
+            arg_2: commit2 if present 
+        """
 
-    if force:
-        subp = Utils.run(["rm", "-rf", bospDst], stdout=subprocess.PIPE)
-        subp.communicate()
+        base = commit1 = commit2 = None
+        argc = len(argv)
+        if argc > 0 : base  = argv[0]
+        if argc > 1 : commit1 = argv[1]
+        if argc > 2 : commit2 = argv[2]
 
-    if not os.path.exists(bospDst):
-        os.makedirs(bospDst)
+        if base == None:
+            print "                                         "
+            print "Usage: porting device [commit1] [commit2]"
+            print "       - device should be presented      "
+            print "                                         "
 
-    Log.i(TAG, "Generating %s from %s" %(bospDst, DEVICE_BASE))
+            sys.exit(1)
 
-    src = os.path.join(DEVICE_BASE, "framework-res")
-    subp = Utils.run(["cp", "-r", src, bospDst], stdout=subprocess.PIPE)
-    subp.communicate()
+        (olderRoot, newerRoot) = Porting(base).prepare(commit1, commit2)
 
-    for jarname in FRAMEWORK_JARS:
-        jarname += ".out"
-        src = os.path.join(DEVICE_BASE, jarname)
-        if os.path.exists(src):
-            subp = Utils.run(["cp", "-r", src, bospDst], stdout=subprocess.PIPE)
+        hasChange = ChangeList(olderRoot, newerRoot, Config.PORTING_XML).make(force=True)
+
+        if not hasChange:
+            print " "
+            print Paint.green(" No changes between %s and %s, nothing to porting." % (olderRoot, newerRoot))
+            sys.exit(0)
+
+        return (olderRoot, newerRoot)
+
+
+    @staticmethod
+    def aosp(aospDst):
+
+        aospSrc = os.path.join(Prepare.DEVICE_BASE, "vendor/aosp")
+        if not os.path.exists(aospSrc):
+            os.makedirs(aospSrc)
+            vendorRoot = os.path.join(Prepare.DEVICE_BASE, "vendor")
+            Utils.decodeAPKandJAR(vendorRoot, aospSrc)
+
+        if not os.path.exists(aospDst):
+            Log.i(TAG, "Generating %s from %s" % (aospDst, Prepare.DEVICE_BASE))
+            shutil.copytree(aospSrc, aospDst)
+
+        Utils.combineFrameworkPartitions(aospDst)
+
+
+    @staticmethod
+    def bosp(bospDst, force=True):
+        """ Prepare BOSP, set force to be False to not generate again if exists.
+        """
+
+        if force:
+            subp = Utils.run(["rm", "-rf", bospDst], stdout=subprocess.PIPE)
             subp.communicate()
 
-    Utils.combineFrameworkPartitions(bospDst)
+        if not os.path.exists(bospDst):
+            os.makedirs(bospDst)
+
+        Log.i(TAG, "Generating %s from %s" %(bospDst, Prepare.DEVICE_BASE))
+
+        src = os.path.join(Prepare.DEVICE_BASE, "framework-res")
+        subp = Utils.run(["cp", "-r", src, bospDst], stdout=subprocess.PIPE)
+        subp.communicate()
+
+        for jarname in Prepare.FRAMEWORK_JARS:
+            jarname += ".out"
+            src = os.path.join(Prepare.DEVICE_BASE, jarname)
+            if os.path.exists(src):
+                subp = Utils.run(["cp", "-r", src, bospDst], stdout=subprocess.PIPE)
+                subp.communicate()
+
+        Utils.combineFrameworkPartitions(bospDst)
 
 
 
@@ -197,7 +217,7 @@ class Porting:
 
     @staticmethod
     def getDevicePath(device):
-        device = os.path.join(os.path.dirname(DEVICE_BASE), device)
+        device = os.path.join(os.path.dirname(Prepare.DEVICE_BASE), device)
         return device
 
 
@@ -313,6 +333,7 @@ class PortingDevice:
 
         os.chdir(self.originPath)
 
+
     def showUserInputHint(self):
         """ Show user input hint
         """
@@ -402,11 +423,6 @@ class Utils:
     """ Utilities
     """
 
-    DEVICE_BASE_TOOL = os.path.join(os.path.dirname(__file__), "device_base.sh")
-
-    PARTITIONS=("secondary_framework.jar.out", "secondary-framework.jar.out",
-                "framework2.jar.out", "framework-ext.jar.out", "framework_ext.jar.out")
-
     @staticmethod
     def decode(baiduZip, out):
         """ Decode FRAMEWORK_JARS in baidu.zip into out directory.
@@ -425,11 +441,21 @@ class Utils:
         subp = Utils.run(["unzip", "-q", "-o", deodexZip, "-d", temp], stdout=subprocess.PIPE)
         subp.communicate()
 
-        # Format path
-        if os.path.join(os.path.join(temp, "SYSTEM")):
-            shutil.move(os.path.join(temp, "SYSTEM"), os.path.join(temp, "system"))
+        Utils.decodeAPKandJAR(temp, out)
 
-        dirname = os.path.join(temp, "system/framework")
+        shutil.rmtree(temp)
+
+        # Phase 3: combine framework partitions
+        Utils.combineFrameworkPartitions(out)
+
+
+    @staticmethod
+    def decodeAPKandJAR(root, out):
+        # Format path
+        if os.path.exists(os.path.join(root, "SYSTEM")):
+            shutil.move(os.path.join(root, "SYSTEM"), os.path.join(root, "system"))
+
+        dirname = os.path.join(root, "system/framework")
 
         Log.i(TAG, "decoding framework-res.apk")
         jarpath = os.path.join(dirname, "framework-res.apk")
@@ -437,18 +463,13 @@ class Utils:
         subp = Utils.run(["apktool", "d", "-f", jarpath, jarout], stdout=subprocess.PIPE)
         Utils.printSubprocessOut(subp)
 
-        for jarname in FRAMEWORK_JARS:
+        for jarname in Prepare.FRAMEWORK_JARS:
             jarpath = os.path.join(dirname, jarname)
             if os.path.exists(jarpath):
                 Log.i(TAG, "decoding %s" % jarname)
                 jarout = os.path.join(out, jarname + ".out")
                 subp = Utils.run(["apktool", "d", "-f", jarpath, jarout], stdout=subprocess.PIPE)
                 Utils.printSubprocessOut(subp)
-
-        shutil.rmtree(temp)
-
-        # Phase 3: combine framework partitions
-        Utils.combineFrameworkPartitions(out)
 
 
     @staticmethod
@@ -482,7 +503,7 @@ class Utils:
         """ Combine framework partitions into framework.jar.out.
         """
 
-        for partition in Utils.PARTITIONS:
+        for partition in Prepare.PARTITIONS:
             if partition == "framework.jar.out": continue
 
             partitionPath = os.path.join(frameworkDir, partition)
@@ -497,18 +518,21 @@ class Utils:
 
     @staticmethod
     def recordLastHead():
-        subp = Utils.run([Utils.DEVICE_BASE_TOOL, "--recd"], stdout=subprocess.PIPE)
+        subp = Utils.run([Prepare.DEVICE_BASE_TOOL, "--recd", Prepare.DEVICE_BASE], stdout=subprocess.PIPE)
         Utils.printSubprocessOut(subp)
+
 
     @staticmethod
     def setToLastHead():
-        subp = Utils.run([Utils.DEVICE_BASE_TOOL, "--last"], stdout=subprocess.PIPE)
+        subp = Utils.run([Prepare.DEVICE_BASE_TOOL, "--last", Prepare.DEVICE_BASE], stdout=subprocess.PIPE)
         Utils.printSubprocessOut(subp)
+
 
     @staticmethod
     def setToOrigHead():
-        subp = Utils.run([Utils.DEVICE_BASE_TOOL, "--orig"], stdout=subprocess.PIPE)
+        subp = Utils.run([Prepare.DEVICE_BASE_TOOL, "--orig", Prepare.DEVICE_BASE], stdout=subprocess.PIPE)
         Utils.printSubprocessOut(subp)
+
 
     @staticmethod
     def run(args, **kwargs):
@@ -531,20 +555,19 @@ class Utils:
 # End of class Utils
 
 
-
-
 if __name__ == "__main__":
     argc = len(sys.argv)
     if argc < 2:
         print __doc__
         sys.exit(0)
 
-    arg1 = sys.argv[1]
-    if   arg1 in ("--patchall,-p"): preparePatchall()
-    elif arg1 in ("--upgrade, -u"): prepareUpgrade()
-    elif arg1 in ("--porting, -t"): preparePorting(sys.argv[2:])
+    if argc > 2: base = sys.argv[2]
+    else:        base = "base"
 
-    elif arg1 in ("--decode,  -d"):
-        if argc > 2: otaZip = sys.argv[2]
-        if argc > 3: out    = sys.argv[3]
-        Utils.decode(otaZip, out)
+    Prepare.setup(base)
+
+    arg1 = sys.argv[1]
+    if   arg1 in ("--patchall,-p"): Prepare.patchall()
+    elif arg1 in ("--upgrade, -u"): Prepare.upgrade()
+    elif arg1 in ("--porting, -t"): Prepare.porting(sys.argv[2:])
+
