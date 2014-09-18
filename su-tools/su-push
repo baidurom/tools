@@ -1,4 +1,12 @@
 #!/bin/bash
+# author: tangliuxiang
+
+function usage()
+{
+	echo "USAGE: su-push <local> <remote>"
+	echo "			- copy file/dir to device"
+	echo "Just like the usage of adb push"
+}
 
 prog="$0"
 while [ -h "${prog}" ]; do
@@ -20,9 +28,22 @@ progdir=`pwd`
 prog="${progdir}"/`basename "${prog}"`
 cd "${oldwd}"
 
+PERMISSION=""
+if [ "x$1" == "x-p" ]; then
+	PERMISSION="$2"
+	shift
+	shift
+fi
+
+if [ $# -lt 2 ]; then
+	usage
+	exit 1
+fi
+
 src=$1
 target=$2
 CHECK_SU=$progdir/check-su
+SU_CHMOD=$progdir/su-chmod
 pcp=$progdir/phone-cp
 ptmp_su_push=/data/local/tmp/su_push
 phone_cp=/data/local/tmp/phone-cp
@@ -38,8 +59,6 @@ if [ -f $src ] || [ -d $src ]; then
 		exit 1
 	fi
 	
-	echo "adb push $src $ptmp_su_push"
-
 	adb shell rm -rf $ptmp_su_push
 	adb shell mkdir -p $ptmp_su_push
 	adb push $src $ptmp_su_push
@@ -55,6 +74,23 @@ if [ -f $src ] || [ -d $src ]; then
 	if [[ $target == "/system/"* ]] || [[ $target == "system/"* ]];then
 		echo "su -c \"mount -o remount,rw /system; $phone_cp $ptmp_src $target;mount -o remount,ro /system\"; exit $?" | adb shell
 	else
-		echo "su -c \"$phone_cp $ptmp_src $target;\"; exit $?" | adb shell
+		echo "su -c \"$phone_cp $PERMISSION $ptmp_src $target; \"; exit $?" | adb shell
 	fi
+
+	if [ $? == 0 ]; then
+		if [ "x$PERMISSION" != "x" ]; then
+			$SU_CHMOD --after-push $src $PERMISSION $target
+			if [ $? != 0 ]; then
+				echo "Error: Failed to push $src to $target"
+				exit 1
+			fi
+		fi
+		echo "Success push $src to $target"
+	else
+		echo "Error: Failed to push $src to $target"
+		exit 1
+	fi
+else
+	echo "Error: $src doesn't exist!"
+	exit 1
 fi

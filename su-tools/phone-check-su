@@ -1,11 +1,12 @@
 #!/system/bin/sh
 
-su -c ls
+su -c "mount -o remount,rw /system" && su -c "mount -o remount,ro /system"
 
 if [ $? == 0 ]; then
 	echo "OK"
-else
-	echo "ERROR"
+	exit 0
 fi;
+
+echo "ERROR"
 
 

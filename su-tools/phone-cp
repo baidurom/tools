@@ -1,7 +1,7 @@
 #!/system/bin/sh
+# author: tangliuxiang
 
 self=$0
-
 src=$1
 dst=$2
 
@@ -12,7 +12,7 @@ fi
 if [ -d $src ]; then
 	ls $src | while read f; do
 		$self $src/$f $dst/$f
-	done	
+	done
 else [ -f $src ]
 	if [ -d $dst ]; then
 		srcBN=${src##*/}

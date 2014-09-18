@@ -95,7 +95,11 @@ class NumToName:
 
 
 def NumToNameForOneFile(path):
-    if Smali.isSmali(path) and os.path.exists(path):
+    if Smali.isSmali(path):
+        path = Smali.getSmaliMainPath(path)
+    else:
+        return
+    if os.path.exists(path):
         fDir = os.path.dirname(path)
         if cmp(fDir, "") == 0:
             fDir = "."
@@ -131,7 +135,7 @@ if __name__ == '__main__':
     argLen = len(sys.argv)
     if argLen == 2:
         path = sys.argv[1]
-        if os.path.isfile(path) and Smali.isSmali(path):
+        if Smali.isSmali(path):
             NumToNameForOneFile(path)
 
         elif os.path.isdir(path):

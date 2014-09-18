@@ -25,11 +25,11 @@ class andprop(object):
             
             self.mParsed = True
             
-    def get(self, key):
+    def get(self, key, defValue = None):
         if self.mPropDict.has_key(key):
             return self.mPropDict[key]
         else:
-            return None
+            return defValue
         
     def set(self, key, value):
         self.mPropDict[key] = value
