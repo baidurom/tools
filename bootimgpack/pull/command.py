@@ -91,13 +91,37 @@ class SuShell(AdbShell):
         """
         cmd = "su -c \"%s\"" % (cmd)
         return super(SuShell, self).run(cmd, out, printout)
-        
+
+class ShellFactory(object):
+    mShell = None
+
+    @staticmethod
+    def __getRootShell__():
+        subp = subprocess.Popen(["check-su"], stdout=subprocess.PIPE)
+        subp.communicate()
+        if subp.returncode == 0:
+            Log.i("AdbShell", "use su to root")
+            return SuShell()
+        else:
+            Log.i("AdbShell", "Can not use su to root, assume your phone has already been root with modify default.prop in boot!")
+            Log.i("AdbShell", "Try adb root, it may be blocked!")
+            subp = subprocess.Popen(["adb", "root"], stdout=subprocess.PIPE)
+            subp.communicate()
+            Log.i("AdbShell", "Root successfull")
+            return AdbShell()
+
+    @staticmethod
+    def getDefaultShell():
+        if ShellFactory.mShell is None:
+            ShellFactory.mShell = ShellFactory.__getRootShell__()
+        return ShellFactory.mShell
+
 class AndroidFile():
     
     def __init__(self, path, shell=None):
         self.mPath = path
         if shell is None:
-            self.mShell = SuShell()
+            self.mShell = ShellFactory.getDefaultShell()
         else:
             self.mShell = shell
         

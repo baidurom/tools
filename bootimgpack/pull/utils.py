@@ -21,9 +21,6 @@ LOG_TAG = "pull_boot_recovery"
 
 def check():
     AdbShell().waitdevices(True)
-    tmpOut = tempfile.mktemp()
-    SuShell().run("echo TRUE", tmpOut)
-    assert os.path.isfile(tmpOut) and file(tmpOut).read().strip("\n") == "TRUE", "You must root your phone first!"
     
 class PullUtils():
 
