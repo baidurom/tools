@@ -200,47 +200,6 @@ class FileReplace(utils.precheck):
             utils.SLog.fail(">>>> Failed to replace %s to %s" %(dst, src))
         return success
 
-    def __replace__old(self, src, dst):
-        srcSmali = Smali.Smali(src)
-        dstSmali = Smali.Smali(dst)
-        
-        self.curSrcLib = LibUtils.getOwnLib(src)
-        self.curDstLib = LibUtils.getOwnLib(dst)
-        
-        self.curSrcLib.cleanModify()
-        self.curDstLib.cleanModify()
-
-        srcMemberSmaliList = srcSmali.getMemberSmaliList()
-        dstMemberSmaliList = dstSmali.getMemberSmaliList()
-    
-        success = True
-        self.outMap.clear()
-        self.curSuccess = True
-        self.curAction = "replace %s to %s" %(dst, src)
-        
-        if not self.__replaceOneFile__(srcSmali, dstSmali):
-            success = False
-            return False
-        
-        for sMem in srcMemberSmaliList:
-            hasClass = False
-            success = True
-            for dMem in dstMemberSmaliList:
-                if dMem.getClassName() == sMem.getClassName():
-                    if not self.__replaceOneFile__(sMem, dMem):
-                        success = False
-                    hasClass = True
-                    break
-            if hasClass is False:
-                dstPath = '%s/%s' %(os.path.dirname(dst), os.path.basename(sMem.getPath()))
-                utils.SLog.i("Add by baidu: %s" %(dstPath))
-                sMem.out(dstPath)
-        if success:
-            for sMem in self.outMap.keys():
-                utils.SLog.i(">>>> SUCCESS: replace %s to %s" %(self.outMap[sMem].getPath(), sMem.getPath()))
-                sMem.out(self.outMap[sMem].getPath())
-            self.curDstLib.out()
-
     def precheck(self, tSmali, bSmali, entry):
         if tSmali is not None:
             if tSmali.getClassName() == self.curClassName:
@@ -266,17 +225,49 @@ class FileReplace(utils.precheck):
     def __exit__(self):
         LibUtils.undoFormat()
 
+    @staticmethod
+    def stb_withoutcheck(src, dst):
+        srcSmali = Smali.Smali(src)
+        dstSmali = Smali.Smali(dst)
+
+        if utils.precheck.shouldIgnore(srcSmali):
+            utils.SLog.fail(">>>> Failed to replace %s to %s" % (dst, src))
+            return False
+
+        curSrcLib = LibUtils.getOwnLib(src)
+        curDstLib = LibUtils.getOwnLib(dst)
+
+        srcSmali = curSrcLib.getFormatSmali(srcSmali.getClassName())
+        dstSmali = curDstLib.getFormatSmali(dstSmali.getClassName())
+
+        srcMemberSmaliList = srcSmali.getMemberSmaliList()
+        dstMemberSmaliList = dstSmali.getMemberSmaliList()
+
+        srcMemberSmaliList.append(srcSmali)
+        dstMemberSmaliList.append(dstSmali)
+
+        for dMem in dstMemberSmaliList:
+            os.remove(dMem.getPath())
+
+        for sMem in srcMemberSmaliList:
+            sMem = curSrcLib.getFormatSmali(sMem.getClassName())
+            sMem.out(os.path.join(os.path.dirname(dst), os.path.basename(sMem.getPath())))
+
 SMALITOBOSP_ADVICE = "%s/help/smalitobosp_advice" %os.path.dirname(os.path.abspath(__file__))
 SMALITOBOSP_SUCCESS = "%s/help/smalitobosp_success" %os.path.dirname(os.path.abspath(__file__))
 
 def smalitobosp(args, withCheck = True):
     fReplace = FileReplace(withCheck)
+
     for smaliFile in args:
         src = utils.getMatchFile(smaliFile, utils.BOSP)
         dst = utils.getMatchFile(smaliFile, utils.TARGET)
         
-        if fReplace.replace(src, dst) is False:
-            raise
+        if withCheck:
+            if fReplace.replace(src, dst) is False:
+                raise
+        else:
+            fReplace.stb_withoutcheck(src, dst)
     utils.SLog.setAdviceStr(file(SMALITOBOSP_ADVICE).read())
     utils.SLog.setSuccessStr(file(SMALITOBOSP_SUCCESS).read())
     #utils.SLog.conclude()

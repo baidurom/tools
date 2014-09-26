@@ -4,9 +4,7 @@ Created on Jul 31, 2014
 @author: tangliuxiang
 '''
 import os
-import utils
 import sys
-import tempfile
 import imagetype
 
 from fstab import fstabconfig
@@ -53,15 +51,16 @@ class mtkpull(pull):
         Constructor
         '''
         super(mtkpull, self).__init__()
-        self.mFstabConfig = fstabconfig(self.getFstabconfigFile())
+        self.mFstabConfig = fstabconfig(mtkpull.getFstabconfigFile())
         self.mFstab = fstab(AndroidFile(mtkpull.MTK_DUMCHAR_INFO), self.mFstabConfig)
         
         Log.d("mtkpull", "work dir: %s" %(self.mWorkdir))
         
         self.mBootImg = os.path.join(self.mWorkdir, "boot.img")
         self.mRecoveryImg = os.path.join(self.mWorkdir, "recovery.img")
-        
-    def getFstabconfigFile(self):
+    
+    @staticmethod
+    def getFstabconfigFile():
         return mtkpull.MTK_FSTAB_CONFIG 
     
     @staticmethod
@@ -92,7 +91,6 @@ class mtkpull(pull):
             return True
         return False
 
-        
     def __pull__(self):
         bootEntry = mtkEntry(imagetype.BOOT, self.mFstab.getEntry(imagetype.BOOT))
         

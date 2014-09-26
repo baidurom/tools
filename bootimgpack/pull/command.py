@@ -154,7 +154,23 @@ class AndroidFile():
     
     def write(self, fstr):
         return self.__writeinternal__(fstr, False)
+    
+    def dd_write(self, pcFile, start=0, size= -DD_BLOCK_SIZE):
+        if size > os.path.getsize(pcFile):
+            size = -DD_BLOCK_SIZE
+
+        skip = start / DD_BLOCK_SIZE
+        count = size / DD_BLOCK_SIZE + 1
+        inFile = self.__pushToPhoneTmp__(pcFile)
+
+        if count <= 0:
+            cmd = "dd if=%s of=%s seek=%s; chmod 777 %s" % (inFile, self.mPath, skip, self.mPath)
+        else:
+            cmd = "dd if=%s of=%s seek=%s count=%s; chmod 777 %s" % (inFile, self.mPath, skip, count, self.mPath)
         
+        print cmd
+        return self.mShell.run(cmd)
+
     def __writeToPcTmp__(self, fstr):
         inFilePath = tempfile.mktemp()
         inFile = file(inFilePath, "w+")
