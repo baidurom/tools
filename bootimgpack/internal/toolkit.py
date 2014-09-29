@@ -25,9 +25,9 @@ class Toolkit:
     Toolkit including all tools
     """
 
-    __DIR = os.path.dirname(os.path.abspath(__file__)) + "/"
-    __TOOLKIT_XML = __DIR + "toolkit.xml"
-    __BOOTIMG_TYPE_FILE = "type.config"
+    TOOLS_ROOT = os.path.dirname(os.path.abspath(__file__))
+    TOOLKIT_XML = os.path.join(TOOLS_ROOT, "toolkit.xml")
+    TYPE_CONFIG = "type.config"
 
     allTools = {}
 
@@ -36,73 +36,75 @@ class Toolkit:
         Initialize tools factory from config.xml
         """
 
-        tree = ET.parse(Toolkit.__TOOLKIT_XML)
+        tree = ET.parse(Toolkit.TOOLKIT_XML)
         for tool in tree.findall("tool"):
-            type = tool.attrib["type"]
+            bootType = tool.attrib["type"]
             unpackTool = tool.find("unpack").text
             packTool = tool.find("pack").text
-            self.allTools[type] =  { "UNPACK" : Toolkit.__DIR + unpackTool,
-                                     "PACK"   : Toolkit.__DIR + packTool }
+            self.allTools[bootType] =  { "UNPACK" : os.path.join(Toolkit.TOOLS_ROOT, unpackTool),
+                                         "PACK"   : os.path.join(Toolkit.TOOLS_ROOT, packTool) }
 
-    def getType(self, bootfile):
+    def parseType(self, bootfile):
         """
         Match appropriate tools for the boot image file.
         """
 
-        toolsType = None
+        tryType = None
 
         # Try to unpack boot image for each type,
         # choose the appropriate one.
-        for type in self.allTools.keys():
+        sortedTypes = sorted(self.allTools.keys(), reverse=True)
+        for bootType in sortedTypes:
             # Try to unpack the boot image by unpack tool
-            unpackTool = self.getTools(type, "UNPACK")
-            if ToolsMatcher.tryUnpack(unpackTool, bootfile) == True:
-                toolsType = type
+            unpackTool = self.getTools(bootType, "UNPACK")
+            if BootimgParser.tryUnpack(unpackTool, bootfile) == True:
+                tryType = bootType
                 break
 
-        ToolsMatcher.clearTempDir()
-        return toolsType
+        BootimgParser.clearTempDir()
 
-    def getTools(self, type, attrib=None):
+        return tryType
+
+    def getTools(self, bootType, attrib=None):
         """
         Get tools by type.
         """
 
-        tools = self.allTools.get(type)
+        tools = self.allTools.get(bootType)
         if attrib == None :
             return tools
         else:
             return tools[attrib]
 
     @staticmethod
-    def storeType(type, dir):
+    def storeType(bootType, bootout):
         # Serialize
-        fileHandle = open(os.path.join(dir, Toolkit.__BOOTIMG_TYPE_FILE), "w")
-        fileHandle.write(type)
+        fileHandle = open(os.path.join(bootout, Toolkit.TYPE_CONFIG), "w")
+        fileHandle.write(bootType)
         fileHandle.close()
 
     @staticmethod
-    def retrieveType(dir):
+    def retrieveType(bootout):
         # De-serialize
         try:
-            fileHandle = open(os.path.join(dir, Toolkit.__BOOTIMG_TYPE_FILE), "r")
-            type = fileHandle.read().rstrip()
+            fileHandle = open(os.path.join(bootout, Toolkit.TYPE_CONFIG), "r")
+            bootType = fileHandle.read().rstrip()
             fileHandle.close()
         except:
             print ">>> Can not find type.config, use COMMON as image type by default"
-            type = "COMMON"
-        return type
+            bootType = "COMMON"
+        return bootType
 
 ### End of class Toolkit
 
 
-class ToolsMatcher:
+class BootimgParser:
     """
     Match out appropriate tools
     """
 
     # Directory for temporary data storage.
-    TEMP_DIR=tempfile.mkdtemp()
+    TEMP_DIR = tempfile.mkdtemp()
 
     @staticmethod
     def tryUnpack(unpackTool, bootimg):
@@ -111,16 +113,16 @@ class ToolsMatcher:
         Return whether unpack successfully or not.
         """
 
-        ToolsMatcher.clearTempDir()
+        BootimgParser.clearTempDir()
 
-        cmd = unpackTool + " " + bootimg + " " + ToolsMatcher.TEMP_DIR
+        cmd = unpackTool + " " + bootimg + " " + BootimgParser.TEMP_DIR
         result = commands.getstatusoutput(cmd)
 
         # Debug code. Useless for release version
-        ToolsMatcher.__debug("Try " + cmd)
-        ToolsMatcher.__debug(result)
+        BootimgParser.__debug("Try " + cmd)
+        BootimgParser.__debug(result)
 
-        return ToolsMatcher.isUnpackSuccess(result)
+        return BootimgParser.isUnpackSuccess(result)
 
     @staticmethod
     def isUnpackSuccess(result):
@@ -128,12 +130,15 @@ class ToolsMatcher:
         Check whether unpack the boot image successfully or not.
         """
 
-        kernel = ToolsMatcher.TEMP_DIR + "/kernel"
-        initrc = ToolsMatcher.TEMP_DIR + "/RAMDISK/init.rc"
+        kernelExists = os.path.exists(os.path.join(BootimgParser.TEMP_DIR, "kernel")) or \
+                       os.path.exists(os.path.join(BootimgParser.TEMP_DIR, "zImage"))
+
+        initrcExists = os.path.exists(os.path.join(BootimgParser.TEMP_DIR, "ramdisk/init.rc")) or \
+                       os.path.exists(os.path.join(BootimgParser.TEMP_DIR, "RAMDISK/init.rc"))
 
         # True : Result is correct and one the file exists
-        return ToolsMatcher.isCorretResult(result) and \
-               (os.path.exists(kernel) or os.path.exists(initrc))
+        return BootimgParser.isCorretResult(result) and \
+               (kernelExists and initrcExists)
 
     @staticmethod
     def isCorretResult(result):
@@ -155,8 +160,8 @@ class ToolsMatcher:
         Clear the temporary directory
         """
 
-        if os.path.exists(ToolsMatcher.TEMP_DIR) == True:
-            shutil.rmtree(ToolsMatcher.TEMP_DIR)
+        if os.path.exists(BootimgParser.TEMP_DIR) == True:
+            shutil.rmtree(BootimgParser.TEMP_DIR)
 
     @staticmethod
     def __debug(msg):

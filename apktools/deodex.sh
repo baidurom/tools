@@ -90,10 +90,11 @@ function deodex_framework()
 
 function deodex_app()
 {
-    ls app/*.odex > /dev/null
+    app_dir=$1
+    ls $app_dir/*.odex > /dev/null
     if [ $? -eq 0 ]
     then
-        for file in app/*.odex
+        for file in $app_dir/*.odex
         do
             read -u6
             {
@@ -211,7 +212,8 @@ then
     deodex_framework
 else
     deodex_framework
-    deodex_app
+    deodex_app app
+    deodex_app priv-app
 fi
 
 cd $tempdir

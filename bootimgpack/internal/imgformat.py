@@ -32,9 +32,10 @@ class ImgFormat(object):
         try:
             idx = fstr.index(ImgFormat.IMAGE_HEAD_STR)
             if idx < 0:
-                raise
+                return
         except:
-            raise ValueError("Unknown boot image type: " + self.bootfile)
+            #print "Unknown boot image type: " + self.bootfile
+            return
         
         f.seek(0)
         f.truncate()
