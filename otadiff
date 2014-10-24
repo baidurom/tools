@@ -1,0 +1,76 @@
+#!/bin/bash
+
+PRE_ZIP=$1
+POST_ZIP=$2
+OUT_ZIP=$3
+
+REMOVE_PRE_ZIP=false
+BAIDU_META=$PORT_ROOT/baidu/release/META
+
+function otadiff()
+{
+    OTA_FROM_TARGET=$PORT_BUILD/tools/releasetools/ota_from_target_files
+    TEST_KEY=$PORT_BUILD/security/testkey
+    out_zip=$3
+
+    if [ $# -lt 2 ]; then
+        echo "Usage: otadiff pre-target-files.zip/ota.zip target-files.zip [ota-diff.zip]"
+        echo "       pre-target-files.zip: the previous target files or ota.zip"
+        echo "       target-files.zip: the current target files"
+        echo "       [ota-diff.zip]: the ota update zip"
+        return
+    elif [ $# -eq 2 ]; then
+        out_zip=ota-diff.zip
+    fi
+
+    $OTA_FROM_TARGET -k $TEST_KEY -i $1 $2 $out_zip
+    echo ">>> out: $out_zip"
+}
+
+function ota2target()
+{
+	preTmpDir=`mktemp -dt pre.target.XXXX`
+	unzip -q -o $PRE_ZIP -d $preTmpDir
+
+	if [ -d $preTmpDir/system ]; then
+		mv $preTmpDir/system $preTmpDir/SYSTEM
+		ls $preTmpDir/*.img
+		if [ $? == 0 ]; then
+			mkdir $preTmpDir/BOOTABLE_IMAGES
+			mv $preTmpDir/*.img $preTmpDir/BOOTABLE_IMAGES
+		fi
+
+		postTmpDir=`mktemp -dt post.target.XXXX`
+		unzip -q -o $POST_ZIP -d $postTmpDir
+
+		if [ -d $postTmpDir/META ]; then
+			cp -rf $postTmpDir/META $preTmpDir
+		else
+			cp -rf $BAIDU_META $preTmpDir
+		fi
+
+		newTarget=`mktemp -tu new.target.XXXX.zip`
+		cd $preTmpDir
+		zip $newTarget * -rqy
+		cd -
+
+		PRE_ZIP=$newTarget
+		REMOVE_PRE_ZIP=true
+
+		rm -rf $postTmpDir
+	fi
+	echo "preTmpDir: $preTmpDir"
+	rm -rf $preTmpDir
+}
+
+function main()
+{
+	ota2target
+	otadiff $PRE_ZIP $POST_ZIP $OUT_ZIP
+
+	if [ $REMOVE_PRE_ZIP == true ]; then
+		rm $PRE_ZIP
+	fi
+}
+
+main

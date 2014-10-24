@@ -51,9 +51,15 @@ SIGN_OTA := true
 
 ##############################################################################
 # customize weather add assert in update-script of ota package
-# set false if you don't need this assert fuction
+# set false if you don't need this assert function
 #-----------------------------------------------------------------------------
 # recovery_ota_assert := false
+
+##############################################################################
+# customize weather create update script in system/etc/install-recovery.sh
+# set true if you want to update recovery image when boot-up
+#-----------------------------------------------------------------------------
+# make_recovery_patch := true
 
 ##############################################################################
 # Directorys which you want to remove in vendor directory

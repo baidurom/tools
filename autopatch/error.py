@@ -77,7 +77,7 @@ class Error:
             print "%3d conflicts in %s " % (Error.CONFLICT_STATISTIC[key], key)
 
         if Error.TOTAL_CONFLICTS > 0:
-            print Paint.bold("%3d conflicts in %d files, go through the reject files in 'out/reject' to find them out" % (Error.TOTAL_CONFLICTS, Error.CONFLICT_FILE_NUM))
+            print Paint.bold("%3d conflicts in %d files, go through the reject files in 'autopatch/reject' to find them out" % (Error.TOTAL_CONFLICTS, Error.CONFLICT_FILE_NUM))
             print Paint.red("\n  Ask for advice? Please type 'coron help CONFLICTS_HAPPENED' \n")
 
 
@@ -106,7 +106,6 @@ class Error:
     def createAllRejects():
         if not os.path.exists(Config.REJ_ROOT):
             os.makedirs(Config.REJ_ROOT)
-
         allrejects = os.path.join(Config.REJ_ROOT, "allrejects.txt")
         handle = open(allrejects, "w")
         handle.write("\n".join(Error.FAILED_LIST))

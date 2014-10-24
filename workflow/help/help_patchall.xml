@@ -39,12 +39,12 @@
 		         you'd better resolve all conflicts before going on with the following work.
 
 		      2. You might follow three steps to resolve conflicts manually:
+
 		         - compare VENDOR and REJECT to find out where conflicts happened;
 		         - compare AOSP   and BOSP   to find out where Baidu changes;
 		         - compare VENDOR and BOSP   to decide how to resolve conflicts.
 
 			  3. You might issue 'coron autofix' to resolve conflicts automatically
-
 			     If you do not know the definition of AOSP, BOSP or VENDOR, type the command
 			     to see what are they:
 			       $ coron help patchall

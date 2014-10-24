@@ -73,7 +73,7 @@ class SLog():
 
         print Paint.red("  ____________________________________________________________________________________")
         print "                                                                                                "
-        print Paint.red("  Go through 'out/still-reject' to find out the rest of conflicts after autofix:      ")
+        print Paint.red("  Go through 'autopatch/still-reject' to find out the rest of conflicts after autofix:")
         print "                                                                                                "
 
         if len(SLog.FAILED_LIST) > 0:
@@ -93,11 +93,11 @@ class SLog():
         SLog.SUCCESS = str
         
 PRJ_ROOT = os.getcwd()
-REJECT = '%s/out/reject' %(PRJ_ROOT)
+REJECT = '%s/autopatch/reject' %(PRJ_ROOT)
 BOSP = '%s/autopatch/bosp' %(PRJ_ROOT)
 AOSP = '%s/autopatch/aosp' %(PRJ_ROOT)
 TARGET = "%s/out/obj/autofix/target" %(PRJ_ROOT)
-OUT_REJECT = '%s/out/still-reject' %(PRJ_ROOT)
+OUT_REJECT = '%s/autopatch/still-reject' %(PRJ_ROOT)
 
 SMALI_POST_SUFFIX = r'\.smali'
 PART_SMALI_POST_SUFFIX = r'\.smali\.part'

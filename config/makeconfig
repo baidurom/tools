@@ -18,7 +18,7 @@ MAKECONFIG_ROOT=$PORT_ROOT/tools/config
 DENSITY_CFG=$MAKECONFIG_ROOT/density.cfg
 TEMPLATE_MAKEFILE=$MAKECONFIG_ROOT/Makefile.template
 VENDOR_MODIFY_JARS_SUGGEST="framework|HTCExtension|services|telephony-common|pm"
-VENDOR_SAVED_APPS_SUGGEST="MtkBt|FMTransmitter|FMRadio|Bluetooth|FmRadio"
+VENDOR_SAVED_APPS_SUGGEST="MtkBt|FMTransmitter|FMRadio|Bluetooth|FmRadio|.*Stk.*"
 
 PULL_BOOT_RECOVERY=pull_boot_recovery
 
@@ -245,7 +245,7 @@ function getConfigValueFromMakefile()
 	elif [ $result_line_count != "1" ];then
 		echo ">>> $makefile's $prop define is wrong!!";
 		exit $ERR_MISSION_FAILED;
-	else
+	else # $result_line_count == "1"
 		base=`grep "^[ ]*$prop" $makefile -w \
 			| awk -F= '{print $NF}' | sed 's/^ *//g;s/$ *//g'`
 

@@ -173,9 +173,27 @@ class ReviseExecutor:
                 self.singleAction(target, older, newer)
 
 
+    @staticmethod
+    def bakupTarget(target, dst):
+        if not os.path.exists(target):
+            return
+
+        dstTarget = os.path.join(dst, target)
+        if os.path.exists(dstTarget):
+            os.remove(dstTarget)
+
+        dirname = os.path.dirname(dstTarget)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+
+        shutil.copy(target, dstTarget)
+
+
     def singleAction(self, target, older, newer):
         """ action for a single file
         """
+
+        ReviseExecutor.bakupTarget(target, Config.VENDOR_ORIGINAL_ROOT)
 
         try:
             if   self.action == ReviseExecutor.ADD:     result = ReviseExecutor.singleReplaceOrAdd(target, newer)
@@ -187,6 +205,8 @@ class ReviseExecutor:
         except:
             Error.fail("  * Failed to %s  %s" % (self.action, target))
             traceback.print_exc()
+
+        ReviseExecutor.bakupTarget(target, Config.VENDOR_PATCHED_ROOT)
 
 
     @staticmethod

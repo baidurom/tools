@@ -116,7 +116,7 @@ class SmaliLib(object):
         for clsName in child.getSuperAndImplementsClassName():
             superSmali = self.getSmali(clsName)
             if superSmali is None:
-                utils.SLog.w("can not get %s's super class: %s" % (child.getClassName(), clsName))
+                utils.SLog.d("can not get %s's super class: %s" % (child.getClassName(), clsName))
                 continue
             
             methodsList.extend(self.getInheritMethods(superSmali, filterInList, filterOutList))
@@ -178,7 +178,7 @@ class SmaliLib(object):
         if cSmali is not None:
             return cSmali.getWasInvokeList()
         else:
-            utils.SLog.w("can not get class %s from smali lib" % (smali.getClassName()))
+            utils.SLog.d("can not get class %s from smali lib" % (smali.getClassName()))
             return []
         
     def getAllFathers(self, smali, allowDuplicate = False):

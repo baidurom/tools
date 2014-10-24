@@ -44,8 +44,9 @@ class Rejector:
 
         top = 0
         size = 0
-        delLineNumbers = []
 
+        # delLinesNumbers record the lines of conflicts
+        delLineNumbers = []
         needToDel = False
 
         targetFile = open(self.mTarget, "r+")
@@ -60,7 +61,7 @@ class Rejector:
                 top += 1
 
                 # Modify the conflict in the original
-                lines[lineNum] = "%s #Conflict %d\n" % (line.rstrip(),size)
+                lines[lineNum] = "%s #Conflict %d\n" % (line.rstrip(), size)
                 self.mConflictNum += 1
 
                 #conflicts.append("#Conflict %d , start at line %d\n" % (size, lineNum))

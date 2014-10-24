@@ -20,12 +20,8 @@ class Config:
     # Root directory of current project
     PRJ_ROOT = os.curdir
 
-    # Root directory of reject files
-    REJ_ROOT = os.path.join(PRJ_ROOT, "out/reject/")
-
-
-### DIFF-PATCH Directory
-    # We need to hold three directory because diff_patch.sh
+### AUTOPATCH Directory
+    # We need to hold three directory because diff3
     # incorporate changes from newer to older into target.
 
     AUTOPATCH = os.path.join(PRJ_ROOT, "autopatch/")
@@ -38,6 +34,15 @@ class Config:
 
     # Last BOSP root directory
     LAST_BOSP_ROOT = os.path.join(AUTOPATCH, "last_bosp/")
+
+    # Vendor original root directory
+    VENDOR_ORIGINAL_ROOT = os.path.join(AUTOPATCH, "vendor_original")
+
+    # Vendor patched root directory
+    VENDOR_PATCHED_ROOT = os.path.join(AUTOPATCH, "vendor_patched")
+
+    # Root directory of reject files
+    REJ_ROOT = os.path.join(AUTOPATCH, "reject/")
 
 ### Patch XML
     PATCHALL_XML = os.path.join(AUTOPATCH, "patchall.xml")

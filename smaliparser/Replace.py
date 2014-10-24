@@ -41,7 +41,7 @@ class Replace(object):
         if unImplementMethods is not None and len(unImplementMethods) > 0:
             vSmali = self.mVSLib.getSmali(smali.getClassName())
             if vSmali is None:
-                utils.SLog.e("Can't get smali %s from vendor: %s"  %(smali.getClassName(), string.join(unImplementMethods)))
+                utils.SLog.d("Can't get smali %s from vendor: %s"  %(smali.getClassName(), string.join(unImplementMethods)))
                 return (canReplaceEntryList, canNotReplaceEntryList)
             
             unImplMethodEntryList = vSmali.getEntryListByNameList(SmaliEntry.METHOD, unImplementMethods)
@@ -57,7 +57,7 @@ class Replace(object):
     
     @staticmethod
     def replaceEntryInFile(entry, outFilePath):
-        utils.SLog.i(" REPLACE %s" % (entry.getSimpleString()))
+        utils.SLog.d(" REPLACE %s" % (entry.getSimpleString()))
 
         dirName = os.path.dirname(outFilePath)
         if not os.path.isdir(dirName):
@@ -66,18 +66,20 @@ class Replace(object):
         outSmali = Smali.Smali(outFilePath)
         outSmali.replaceEntry(entry)
         outSmali.out()
-        
+
+        print "  ADD %s %s --> %s" % (entry.getType(), entry.getName(), os.path.basename(outFilePath))
+
     @staticmethod
     def replaceEntry(src, dst, type, name, withCheck = True):
         srcSmali = Smali.Smali(src)
         dstSmali = Smali.Smali(dst)
 
         if srcSmali is None:
-            utils.SLog.e("%s doesn't exist or is not smali file!" %src)
+            utils.SLog.d("%s doesn't exist or is not smali file!" %src)
             return False
 
         if dstSmali is None:
-            utils.SLog.e("%s doesn't exist or is not smali file!" %dst)
+            utils.SLog.d("%s doesn't exist or is not smali file!" %dst)
             return False
 
         name = name.split()[-1]
@@ -103,7 +105,7 @@ class Replace(object):
                 dstLib.replaceEntry(srcLib, srcEntry)
                 returnValue = True
         else:
-            utils.SLog.e("Can not get %s:%s from %s" %(type, name, src))
+            utils.SLog.d("Can not get %s:%s from %s" %(type, name, src))
             returnValue = False
         return returnValue
 
@@ -125,7 +127,7 @@ class Replace(object):
                     outStr = re.sub(r'^ ', '', contentStr, 0, re.M)
                     Replace.BLANK_ENTRY[item.nodeName][returnType] = outStr
                 else:
-                    utils.SLog.w("Doesn't support %s in %s" %(item.nodeName, Replace.BLANK_CONTENT_XML))
+                    utils.SLog.d("Doesn't support %s in %s" %(item.nodeName, Replace.BLANK_CONTENT_XML))
     
     @staticmethod    
     def __getBlankContentStr__(entry):
@@ -158,13 +160,13 @@ class Replace(object):
 
     @staticmethod
     def appendBlankEntry(entry, outFilePath):
-        utils.SLog.i(" ADD BLANK %s" % (entry.getSimpleString()))
-        
+        utils.SLog.d(" ADD BLANK %s" % (entry.getSimpleString()))
+
         if Replace.BLANK_ENTRY is None:
             Replace.parseAutoComXml()
         
         if not Replace.BLANK_ENTRY.has_key(entry.getType()) or entry.getType() != SmaliEntry.METHOD:
-            utils.SLog.e("Doesn't support add blank %s in autocomplete")
+            utils.SLog.d("Doesn't support add blank %s in autocomplete")
             return
 
         dirName = os.path.dirname(outFilePath)
@@ -175,7 +177,9 @@ class Replace(object):
         nEntry = Replace.getBlankEntry(entry)
         partSmali.replaceEntry(nEntry)
         partSmali.out()
-        
+
+        print "  ADD %s %s --> %s" % (entry.getType(), entry.getName(), os.path.basename(outFilePath))
+
     def getUnImplementMethods(self, smali):
         return self.mMSLib.getUnImplementMethods(self.mASLib, smali)
         

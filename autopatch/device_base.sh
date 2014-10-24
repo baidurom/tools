@@ -36,7 +36,7 @@ function check_update()
 	local noBranch=`git branch | grep "(no branch)"`
 	if [ ! -z "${noBranch}" ]; then
 		local branch=`git log -1 --oneline --decorate=short | grep -wo "origin/.*," | cut -d"," -f1`
-		git fetch  ${option} --all
+		git fetch  ${option} origin ${branch}
 		#git rebase --abort
 		git rebase ${option} ${branch}
 	else
