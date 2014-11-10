@@ -125,6 +125,10 @@ class Prepare:
         """ Prepare precondition of upgrade
         """
 
+        # Remove last_bosp and bosp
+        Utils.run(["rm", "-rf", OPTIONS.olderRoot], stdout=subprocess.PIPE).communicate()
+        Utils.run(["rm", "-rf", OPTIONS.newerRoot], stdout=subprocess.PIPE).communicate()
+
         lastBaiduZip  = os.path.join(Config.PRJ_ROOT, "baidu/last_baidu.zip")
         baiduZip      = os.path.join(Config.PRJ_ROOT, "baidu/baidu.zip")
 
