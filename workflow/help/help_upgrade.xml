@@ -31,10 +31,11 @@
 
 		         you'd better resolve all conflicts before going on with the following work.
 
-		      2. You might follow three steps to resolve conflicts:
+		      2. You might follow three steps to resolve conflicts manually:
+
 		         - compare VENDOR and REJECT to find out where conflicts happened;
-		         - compare AOSP   and BOSP   to find out where Baidu changes;
-		         - compare VENDOR and BOSP   to decide how to resolve conflicts.
+		         - compare AOSP   and BOSP   to find out why conflicts happened;
+		         - resolve conflicts in VENDOR.
 
 		  ────────────────────────────────────────────────────────────────────────────────────
 		</detail>

@@ -1,18 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!-- "seq" identify the sequence of unpack trying -->
 <toolkit>
-    <tool type="COMMON">
+    <tool seq="5" type="COMMON">
         <unpack>common/unpack.sh</unpack>
         <pack>common/pack.sh</pack>
     </tool>
-    <tool type="COMMON-V1">
+    <tool seq="4" type="COMMON-V1">
         <unpack>common-v1/unpack.sh</unpack>
         <pack>common-v1/pack.sh</pack>
     </tool>
-    <tool type="MTK">
+    <tool seq="3" type="QCOM">
+        <unpack>qcom/unpack.sh</unpack>
+        <pack>qcom/pack.sh</pack>
+    </tool>
+    <tool seq="2" type="MTK">
         <unpack>mtk/unpack.sh</unpack>
         <pack>mtk/pack.sh</pack>
     </tool>
-    <tool type="SONY">
+    <tool seq="1" type="SONY">
         <unpack>sony/unpack.sh</unpack>
         <pack>sony/pack.sh</pack>
     </tool>

@@ -29,10 +29,13 @@ function pack_bootimg()
 
 	cd $BOOTDIR
 	$MKBOOTFS ./RAMDISK | $MINIGZIP > ramdisk.img
+	[ $? != 0 ] && exit 1
+
 	BOOTBASE=$(cat ./base)
 	BOOTCMDLINE=$(cat ./cmdline)
 	BOOTPAGESIZE=$(cat ./pagesize)
 	$MKBOOTIMG --kernel ./kernel --cmdline "$BOOTCMDLINE" --pagesize "$BOOTPAGESIZE"  --base "$BOOTBASE" --ramdisk ./ramdisk.img --output out.img
+	[ $? != 0 ] && exit 1
 
 	rm ramdisk.img
 	cd $old_pwd

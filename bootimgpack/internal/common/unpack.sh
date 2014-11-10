@@ -38,7 +38,11 @@ function unpack_bootimg()
 
 	# Unpack boot image
 	$UNPACKBOOTIMG -i boot.img -o ./
+	[ $? != 0 ] && exit 1
+
 	$UNPACKBOOTIMGPL boot.img
+	[ $? != 0 ] && exit 1
+
 	mv boot.img-ramdisk   RAMDISK
 	mv boot.img-zImage    kernel
 	mv boot.img-cmdline   cmdline
@@ -47,8 +51,16 @@ function unpack_bootimg()
 	rm -rf boot.img*
 
 	export LIBC_FATAL_STDERR_=$tmp_stderr
+
 	cd $old_pwd
 }
+
+function check_result()
+{
+	[ ! -e $OUTPUT/kernel ] && exit 1
+	[ ! -e $OUTPUT/RAMDISK/init.rc ] && exit 1
+}
+
 
 ### Start Script ###
 
@@ -58,3 +70,5 @@ function unpack_bootimg()
 
 init_tools;
 unpack_bootimg;
+check_result;
+exit 0

@@ -38,7 +38,7 @@ KEY_VOLATILE = "volatile"
 KEY_INTERFACE = "interface"
 
 class SLog():
-    TAG = ""
+    TAG = "smali-parser"
     DEBUG = False
     FAILED_LIST = []
     SUCCESS_LIST = []

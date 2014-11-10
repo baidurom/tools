@@ -352,7 +352,7 @@ class Smali(object):
 
         sName = os.path.basename(self.mPath)[:-6]
 
-        utils.SLog.d(">>> begin split file: %s to %s" %(self.mPath, outdir))
+        utils.SLog.d("begin split file: %s to %s" %(self.mPath, outdir))
 
         partList = []
 

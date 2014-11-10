@@ -31,7 +31,7 @@ class Rejector:
     def getConflictNum(self):
         if   fnmatch.fnmatch(self.mTarget, "*.xml"):
             self.resolveConflict()
-        elif fnmatch.fnmatch(self.mTarget, "*.smali"):
+        else:
             self.collectConflict()
 
         return self.mConflictNum
@@ -89,7 +89,7 @@ class Rejector:
 
                     if line.startswith(Rejector.CONFLICT_MID):
                         # Modify the conflict in the original
-                        lines[lineNum] = "%s #Conflict %d\n" % (line.rstrip(), size-top)
+                        #lines[lineNum] = "%s #Conflict %d\n" % (line.rstrip(), size-top)
                         needToDel = True
 
                     if needToDel:

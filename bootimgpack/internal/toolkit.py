@@ -21,40 +21,40 @@ except ImportError:
 ### Class blocks
 
 class Toolkit:
-    """
-    Toolkit including all tools
+    """ Toolkit including all tools
     """
 
     TOOLS_ROOT = os.path.dirname(os.path.abspath(__file__))
     TOOLKIT_XML = os.path.join(TOOLS_ROOT, "toolkit.xml")
     TYPE_CONFIG = "type.config"
-
-    allTools = {}
-
+ 
     def __init__(self):
+        """ Initialize tools factory from config.xml
         """
-        Initialize tools factory from config.xml
-        """
+
+        self.allTools = {}
+        self.sequence = {}
 
         tree = ET.parse(Toolkit.TOOLKIT_XML)
         for tool in tree.findall("tool"):
+            seq = tool.attrib["seq"]
             bootType = tool.attrib["type"]
             unpackTool = tool.find("unpack").text
             packTool = tool.find("pack").text
             self.allTools[bootType] =  { "UNPACK" : os.path.join(Toolkit.TOOLS_ROOT, unpackTool),
                                          "PACK"   : os.path.join(Toolkit.TOOLS_ROOT, packTool) }
+            self.sequence[seq] = bootType
 
     def parseType(self, bootfile):
-        """
-        Match appropriate tools for the boot image file.
+        """ Match appropriate tools for the boot image file.
         """
 
         tryType = None
 
         # Try to unpack boot image for each type,
         # choose the appropriate one.
-        sortedTypes = sorted(self.allTools.keys(), reverse=True)
-        for bootType in sortedTypes:
+        for seq in sorted(self.sequence.keys()):
+            bootType = self.sequence.get(seq)
             # Try to unpack the boot image by unpack tool
             unpackTool = self.getTools(bootType, "UNPACK")
             if BootimgParser.tryUnpack(unpackTool, bootfile) == True:
@@ -66,8 +66,7 @@ class Toolkit:
         return tryType
 
     def getTools(self, bootType, attrib=None):
-        """
-        Get tools by type.
+        """ Get tools by type of boot.img
         """
 
         tools = self.allTools.get(bootType)
@@ -99,8 +98,7 @@ class Toolkit:
 
 
 class BootimgParser:
-    """
-    Match out appropriate tools
+    """ Match out appropriate tools
     """
 
     # Directory for temporary data storage.
@@ -108,56 +106,24 @@ class BootimgParser:
 
     @staticmethod
     def tryUnpack(unpackTool, bootimg):
-        """
-        Try to unpack the boot image into TEMP_DIR.
-        Return whether unpack successfully or not.
+        """ Try to unpack the boot image into TEMP_DIR.
+            Return True: unpack successfully. False: otherwise.
         """
 
         BootimgParser.clearTempDir()
 
-        cmd = unpackTool + " " + bootimg + " " + BootimgParser.TEMP_DIR
-        result = commands.getstatusoutput(cmd)
+        cmd = "%s %s %s" %(commands.mkarg(unpackTool), commands.mkarg(bootimg), commands.mkarg(BootimgParser.TEMP_DIR))
+        (status, output) = commands.getstatusoutput(cmd)
 
         # Debug code. Useless for release version
-        BootimgParser.__debug("Try " + cmd)
-        BootimgParser.__debug(result)
+        BootimgParser.__debug("\nTry: %s" %cmd)
+        BootimgParser.__debug(output)
 
-        return BootimgParser.isUnpackSuccess(result)
-
-    @staticmethod
-    def isUnpackSuccess(result):
-        """
-        Check whether unpack the boot image successfully or not.
-        """
-
-        kernelExists = os.path.exists(os.path.join(BootimgParser.TEMP_DIR, "kernel")) or \
-                       os.path.exists(os.path.join(BootimgParser.TEMP_DIR, "zImage"))
-
-        initrcExists = os.path.exists(os.path.join(BootimgParser.TEMP_DIR, "ramdisk/init.rc")) or \
-                       os.path.exists(os.path.join(BootimgParser.TEMP_DIR, "RAMDISK/init.rc"))
-
-        # True : Result is correct and one the file exists
-        return BootimgParser.isCorretResult(result) and \
-               (kernelExists and initrcExists)
-
-    @staticmethod
-    def isCorretResult(result):
-        """
-        Check whether the result contains error or not
-        """
-
-        errKey1 = "Could not find any embedded ramdisk images"
-        errKey2 = "Aborted"
-        strResult = str(result)
-
-        # True : all the error keys are not found in result
-        return strResult.find(errKey1) < 0 and \
-               strResult.find(errKey2) < 0
+        return status == 0
 
     @staticmethod
     def clearTempDir():
-        """
-        Clear the temporary directory
+        """ Clear the temporary directory
         """
 
         if os.path.exists(BootimgParser.TEMP_DIR) == True:

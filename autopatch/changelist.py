@@ -43,13 +43,14 @@ class ChangeList:
 
     def make(self, force=True):
         """ Generate the change list into XML.
-            Set force as False not to generate again if exists.  
+            Set force as False not to generate again if exists.
         """
 
         if not force and os.path.exists(ChangeList.PATCH_XML):
             Log.d(TAG, "Using the existing %s" % ChangeList.PATCH_XML)
             return True
 
+        Log.i(TAG, "Generating %s" % ChangeList.PATCH_XML)
         hasChange = ChangeList.XMLFromDiff()
 
         return hasChange

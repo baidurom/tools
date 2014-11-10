@@ -33,11 +33,19 @@ function unpack_bootimg()
 
 	# Unpack boot image
 	$UNPACKBOOTIMG boot.img
+	[ $? != 0 ] && exit 1
+
 	mv boot.img-ramdisk  RAMDISK
 	mv boot.img-kernel   kernel
 	rm -rf boot.img*
 
 	cd $old_pwd
+}
+
+function check_result()
+{
+	[ ! -e $OUTPUT/kernel ] && exit 1
+	[ ! -e $OUTPUT/RAMDISK/init.rc ] && exit 1
 }
 
 
@@ -49,3 +57,5 @@ function unpack_bootimg()
 
 init_tools;
 unpack_bootimg;
+check_result;
+exit 0

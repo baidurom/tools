@@ -18,12 +18,14 @@ class Bootimg:
     FORMAT_BEFORE_UNPACK = True
 
     def __init__(self, bootfile):
+        """ bootfile could be a boot.img or an already unpacked boot directory
+        """
+
         self.bootfile = bootfile
         self.imgFormat = imgformat.ImgFormat(self.bootfile)
 
     def unpack(self, output):
-        """
-        Unpack the boot image into the output directory.
+        """ Unpack the boot image into the output directory.
         """
         if Bootimg.FORMAT_BEFORE_UNPACK:
             self.imgFormat.format()
@@ -36,16 +38,20 @@ class Bootimg:
 
         # Execute the unpack command
         unpackTool = self.TOOLKIT.getTools(self.bootType, "UNPACK")
-        cmd = unpackTool + " " + self.bootfile + " " + output
-        commands.getstatusoutput(cmd)
-        print ">>> Unpack " + self.bootType + " " + self.bootfile + " --> " + output
+        cmd = "%s %s %s" %(commands.mkarg(unpackTool), commands.mkarg(self.bootfile), commands.mkarg(output))
+        (status, result) = commands.getstatusoutput(cmd)
+
+        if status != 0:
+            print ">>> Unpack failed"
+            print result
+        else:
+            print ">>> Unpack %s %s --> %s" %(self.bootType, self.bootfile, output)
 
         # Store the used tools to output
         Toolkit.storeType(self.bootType, output)
 
     def pack(self, output):
-        """
-        Pack the BOOT directory into the output image
+        """ Pack the BOOT directory into the output image
         """
 
         # Retrieve the last used tools from boot directory
@@ -56,9 +62,14 @@ class Bootimg:
 
         # Execute the pack command
         packTool = self.TOOLKIT.getTools(self.bootType, "PACK")
-        cmd = packTool + " " + self.bootfile + " " + output
-        commands.getstatusoutput(cmd)
-        print ">>> Pack " + self.bootType + " " + self.bootfile + " --> " + output
+        cmd = "%s %s %s" %(commands.mkarg(packTool), commands.mkarg(self.bootfile), commands.mkarg(output))
+        (status, result) = commands.getstatusoutput(cmd)
+
+        if status != 0:
+            print ">>> Pack failed"
+            print result
+        else:
+            print ">>> Pack %s %s --> %s" %(self.bootType, self.bootfile, output)
 
 ### End of class Bootimg
 

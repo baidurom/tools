@@ -10,8 +10,7 @@ if [ ! -f $initrd ]; then
 fi
 
 if [ -d $ramdisk ]; then
-    echo "$ramdisk already exists."
-    exit 1
+    rm $ramdisk -rf
 fi
 
 mkdir -p $ramdisk

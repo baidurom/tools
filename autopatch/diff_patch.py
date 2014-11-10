@@ -100,11 +100,27 @@ class DiffPatch():
         if status != 2:
             # Write back the patched file
             targetFile = open(target, "wb")
+            if status != 0:
+                output = DiffPatch.__markConflictMethod(output)
             targetFile.write(output)
             targetFile.close()
 
         # status is 0 if successful
         return status == 0
+
+
+    @staticmethod
+    def __markConflictMethod(output):
+        """ Mark out the method name in conflict part.
+        """
+
+        subStart   = output.find(".method")
+        subEnd     = output.find("(")
+        if subStart >= 0:
+            methodName = output[subStart:subEnd]
+            output = output.replace("=======", "======= #@%s@" %methodName)
+
+        return output
 
 
 ###
@@ -198,8 +214,21 @@ class SmaliSplitter:
             # BOSP has no change on AOSP.
             # Still handle this case: "access$" method
             if newerPart.find("access$") >= 0:
-                Log.d(TAG, "  [Same access part %s ] " % newerPart)
+                Log.d(TAG, "  [Might useful access part %s ] " % newerPart)
+
+                lines = []
+                lines.append("\n# Remove the first '#' if you want to enable this method. It might be invoked from codes of BOSP.\n")
+                for line in newerContent.splitlines():
+                    if len(line) > 0: line = "#%s\n" % line
+                    lines.append(line)
+
+                newerHandle.seek(0)
+                newerHandle.truncate()
+                newerHandle.writelines(lines)
+                newerHandle.close()
                 self.mPartList.append(newerPart)
+            else:
+                newerHandle.close()
         else:
             # BOSP has changes on AOSP.
 
@@ -213,6 +242,7 @@ class SmaliSplitter:
             newerHandle.write(newerContent)
             newerHandle.close()
             self.mPartList.append(newerPart)
+
 
     def join(self):
         """ Join all the partitions.

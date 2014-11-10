@@ -1,0 +1,9 @@
+# auto add Baidu Service in init.rc
+service WordSegService /system/bin/WordSegService
+    class main
+    oneshot
+
+service serviceext /sbin/serviceext
+    class main
+    oneshot
+

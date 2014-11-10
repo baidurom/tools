@@ -38,12 +38,27 @@ function unpack_bootimg()
 
 	# Unpack boot image
 	$ABOOTIMG -x boot.img
+	[ $? != 0 ] && exit 1
+
 	$UNPACK_INITRD
+	[ $? != 0 ] && exit 1
+
 	rm -rf boot.img
+
+	# Remove the bootsize
+	mv bootimg.cfg bootimg.cfg~
+	sed {1d} bootimg.cfg~ > bootimg.cfg
 
 	# export LIBC_FATAL_STDERR_=$tmp_stderr
 	cd $old_pwd
 }
+
+function check_result()
+{
+	[ ! -e $OUTPUT/zImage ] && exit 1
+	[ ! -e $OUTPUT/RAMDISK/init.rc ] && exit 1
+}
+
 
 ### Start Script ###
 
@@ -53,3 +68,5 @@ function unpack_bootimg()
 
 init_tools;
 unpack_bootimg;
+check_result;
+exit 0

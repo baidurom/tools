@@ -62,6 +62,7 @@ function pack_bootimg()
 	       $FILE_RAMDISK@$FILE_RAMDISK_ADDR,ramdisk \
 	       $FILE_RPM@$FILE_RPM_ADDR,rpm \
 	       $OTHER_PARAM
+	[ $? != 0 ] && exit 1
 
 	# Clear temporary files
 	rm $FILE_RAMDISK

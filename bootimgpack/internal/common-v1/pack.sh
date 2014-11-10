@@ -27,11 +27,15 @@ function pack_bootimg()
 	local old_pwd=`pwd`
 
 	cd $BOOTDIR
-	$PACK_INITRD newinitrd.img
+	$PACK_INITRD -f newinitrd.img
+	[ $? != 0 ] && exit 1
+
 	if [ -e secondstage ]; then
 		$ABOOTIMG --create out.img -f bootimg.cfg -k zImage -r newinitrd.img -s secondstage
+		[ $? != 0 ] && exit 1
 	else
 		$ABOOTIMG --create out.img -f bootimg.cfg -k zImage -r newinitrd.img
+		[ $? != 0 ] && exit 1
 	fi
 
 	cd $old_pwd

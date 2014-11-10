@@ -30,7 +30,15 @@ function unpack_bootimg()
 {
 	# Unpack boot image
 	$UNPACKBOOTIMG $BOOTIMG $OUTPUT
+	[ $? != 0 ] && exit 1
 }
+
+function check_result()
+{
+	[ ! -e $OUTPUT/kernel ] && exit 1
+	[ ! -e $OUTPUT/RAMDISK/init.rc ] && exit 1
+}
+
 
 ### Start Script ###
 
@@ -40,3 +48,5 @@ function unpack_bootimg()
 
 init_tools;
 unpack_bootimg;
+check_result;
+exit 0

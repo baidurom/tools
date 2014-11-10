@@ -45,9 +45,14 @@ if __name__ == '__main__':
     assertTypeEquals(bootfile, "COMMON-V1")
     print "<<< Pass\n"
 
-    print ">>> Test unpack common boot.img"
+    print ">>> Test unpack common v1 boot.img"
     bootfile = os.path.join(testDir, "common-v1-boot.img")
     assertTypeEquals(bootfile, "COMMON-V1")
+    print "<<< Pass\n"
+
+    print ">>> Test unpack qcom boot.img"
+    bootfile = os.path.join(testDir, "qcom-boot.img")
+    assertTypeEquals(bootfile, "QCOM")
     print "<<< Pass\n"
 
     print ">>> Test unpack mtk boot.img"
@@ -70,6 +75,11 @@ if __name__ == '__main__':
     assetPackSucc(bootfile)
     print "<<< Pass\n"
 
+    print ">>> Test pack qcom boot.img"
+    bootfile = os.path.join(testDir, "qcom-boot")
+    assetPackSucc(bootfile)
+    print "<<< Pass\n"
+
     print ">>> Test pack mtk boot.img"
     bootfile = os.path.join(testDir, "mtk-boot")
     assetPackSucc(bootfile)
@@ -79,3 +89,4 @@ if __name__ == '__main__':
     bootfile = os.path.join(testDir, "sony-boot")
     assetPackSucc(bootfile)
     print "<<< Pass\n"
+

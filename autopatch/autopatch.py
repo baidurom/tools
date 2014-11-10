@@ -12,7 +12,6 @@ Usage: $autopatch.py [OPTIONS]
 
                 Loosely, make sure you have prepared the autopatch directory by your self
                 --patchall-loose, -pl : Patch all the changes loosely, not update AOSP and BOSP again
-                --upgrade-loose,  -ul : Patch all the changes loosely, not update LAST_BOSP and BOSP again
 """
 
 __author__ = 'duanqz@gmail.com'
@@ -23,14 +22,13 @@ import shutil
 import os, sys
 import fnmatch
 import traceback
+import precondition
 
 from diff_patch import DiffPatch
 from target_finder import TargetFinder
 from config import Config
 from error import Error
 from rejector import Rejector
-from precondition import Prepare
-
 from formatters.format import Format
 from formatters.log import Paint
 
@@ -45,7 +43,6 @@ TAG="autopatch"
 
 
 class AutoPatch:
-
 
     def __init__(self, targetRoot, olderRoot, newerRoot, patchXML):
         AutoPatch.TARGET_ROOT = targetRoot
@@ -83,9 +80,12 @@ class AutoPatchXML:
 
         description = feature.attrib['description']
 
-        print "\n [%s]" % description
-        for revise in feature:
-            ReviseExecutor(revise).run()
+        if len(feature.getchildren()) == 0:
+            print "\n No changes between %s and %s, nothing to patch." % (AutoPatch.OLDER_ROOT, AutoPatch.NEWER_ROOT)
+        else:
+            print "\n [%s]" % description
+            for revise in feature:
+                ReviseExecutor(revise).run()
 
 # End of class AutoPatchXML
 
@@ -306,48 +306,19 @@ class ReviseExecutor:
 # End of class ReviseExecutor
 
 
-class Executor:
-
-
-    def __init__(self, base):
-        Prepare.setup(base)
-
-
-    def patchall(self, loose=False):
-        if not loose: Prepare.patchall()
-
-        AutoPatch(Config.PRJ_ROOT, Config.AOSP_ROOT, Config.BOSP_ROOT, Config.PATCHALL_XML).run()
-
-
-    def upgrade(self, loose=False):
-        if not loose: Prepare.upgrade()
-
-        AutoPatch(Config.PRJ_ROOT, Config.LAST_BOSP_ROOT, Config.BOSP_ROOT, Config.UPGRADE_XML).run()
-
-
-    def porting(self, argv):
-        (olderRoot, newerRoot) = Prepare.porting(argv)
-
-        AutoPatch(Config.PRJ_ROOT, olderRoot, newerRoot, Config.PORTING_XML).run()
-
-
-
-
-if __name__ == "__main__":
-    argc = len(sys.argv)
-    if argc < 2:
+def main(argv):
+    argc = len(argv)
+    if argc <= 1:
         print __doc__
         sys.exit(1)
 
-    if argc > 2: base = sys.argv[2]
-    else:        base = "base"
+    options = precondition.OPTIONS.handle(argv)
 
-    exe = Executor(base)
+    if not argv[1] in ("--patchall-loose", "-pl"):
+        precondition.Prepare()
 
-    arg1 = sys.argv[1]
-    if   arg1 in ("--patchall,-p"): exe.patchall()
-    elif arg1 in ("--upgrade, -u"): exe.upgrade()
-    elif arg1 in ("--porting, -t"): exe.porting(sys.argv[2:])
-    elif arg1 in ("--patchall-loose, -pl"): exe.patchall(loose=True)
-    elif arg1 in ("--upgrade-loose,  -ul"): exe.upgrade(loose=True)
+    AutoPatch(Config.PRJ_ROOT, options.olderRoot, options.newerRoot, options.patchXml).run()
+
+if __name__ == "__main__":
+    main(sys.argv)
 
