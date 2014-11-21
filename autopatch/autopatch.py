@@ -11,7 +11,7 @@ Usage: $autopatch.py [OPTIONS]
                 --porting,  -t : Porting changes from the other device
 
                 Loosely, make sure you have prepared the autopatch directory by your self
-                --patchall-loose, -pl : Patch all the changes loosely, not update AOSP and BOSP again
+                --loosely,  -l : Not prepare autopatch/
 """
 
 __author__ = 'duanqz@gmail.com'
@@ -314,8 +314,7 @@ def main(argv):
 
     options = precondition.OPTIONS.handle(argv)
 
-    if not argv[1] in ("--patchall-loose", "-pl"):
-        precondition.Prepare()
+    if options.prepare: precondition.Prepare()
 
     AutoPatch(Config.PRJ_ROOT, options.olderRoot, options.newerRoot, options.patchXml).run()
 
