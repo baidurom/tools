@@ -641,9 +641,14 @@ class Utils:
         # Copy all the sub classes even if no change.
         # We need to format the SMALI file
         pos = srcFilePath.find("$")
-        if pos > 0: srcFilePath = srcFilePath[0:pos] + "*"
+        if pos > 0:
+            srcFilePath = srcFilePath[0:pos] + "*"
+        elif srcFilePath.endswith(".smali"):
+            srcFilePath = srcFilePath.rstrip(".smali") + "*"
+
         # Note: Do not use commands.mkarg here
         cmd = "cp %s %s" %(srcFilePath, dstDirname)
+        Log.d(TAG, "Utils.copyWholly(): %s" %cmd)
         commands.getstatusoutput(cmd)
 
 
