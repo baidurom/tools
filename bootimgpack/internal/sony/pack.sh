@@ -57,7 +57,7 @@ function pack_bootimg()
 	cd $DIR_RAMDISK && find . | cpio -o -H newc | gzip > ../$FILE_RAMDISK && cd ..
 
 	# Make kernel-updated.elf
-	python $TOOL_MKELF -o out.img \
+	python $TOOL_MKELF -o pack.img \
 	       $FILE_KERNEL@$FILE_KERNEL_ADDR \
 	       $FILE_RAMDISK@$FILE_RAMDISK_ADDR,ramdisk \
 	       $FILE_RPM@$FILE_RPM_ADDR,rpm \
@@ -67,7 +67,7 @@ function pack_bootimg()
 	# Clear temporary files
 	rm $FILE_RAMDISK
 	cd $old_pwd
-	mv $BOOTDIR/out.img $OUTPUT
+	mv $BOOTDIR/pack.img $OUTPUT
 }
 
 # Check parameters

@@ -27,9 +27,10 @@ class PullUtils():
     @staticmethod
     def pull(outDir):
         ret = False
-        Log.i("pull_boot_recovery", "Begin pull boot and recovery, make sure your phone was connected and adb devices is fine!")
-        Log.i("pull_boot_recovery", "It may take a few minutes, please wait....")
+        Log.i(LOG_TAG, "Begin pull boot and recovery, make sure your phone was connected and adb devices is fine!")
+        Log.i(LOG_TAG, "It may take a few minutes, please wait....")
         check()
+        Log.i(LOG_TAG, "adb connect success.")
         if mtkpull.isMtkDevice() and mtkpull.do(outDir):
             Log.d("pull_boot_recovery", "Success use mtkpull to pull images....")
             ret = True

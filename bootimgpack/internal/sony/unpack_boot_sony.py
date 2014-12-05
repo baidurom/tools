@@ -29,6 +29,8 @@ def main(fname, output=None):
   f = open(fname, 'rb')
   os.chdir(output)
   n = getSegNum(f)
+  if n > 100:
+    return -1 # not a sony img, just return
   f.seek(52)
 
   fBaseName = os.path.split(fname)[1]

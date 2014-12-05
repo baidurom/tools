@@ -14,6 +14,8 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from formatters.log import Log
 
+LOG_TAG = "pull"
+
 class pull(object):
     '''
     classdocs
@@ -44,6 +46,7 @@ class pull(object):
         assert adPt.exist(), "File %s is not exist in phone!" %(pull.PROC_PARTITIONS)
         
         outAdDict = {}
+        Log.i(LOG_TAG, "Try to create block of partitions ...")
         for etr in adPt.read().splitlines():
             stripEtr = etr.strip("\n")
             if len(stripEtr) > 0 and stripEtr[0] != "#":
@@ -57,17 +60,22 @@ class pull(object):
                     adBlk = AndroidFile("%s/%s" %(pull.BLOCK_DIR, blkName))
                     if blkSize >= minsize and blkSize <= maxsize and adBlk.exist():
                         outAdDict[blkName] = adBlk
+        Log.i(LOG_TAG, "Create block of partitions done!")
         return outAdDict
     
     def __pull__(self, adDict):
+        Log.i(LOG_TAG, "Pull blocks from device ...")
         for blkName in adDict.keys():
             pcOut = os.path.join(self.mWorkdir, blkName)
             if adDict[blkName].pull(pcOut):
+                Log.i(LOG_TAG, "...")
                 img = imagetype.imagetype(pcOut)
                 itype = img.getType()
                 if itype is not None:
                     self.mImgDict[itype] = pcOut
                 img.exit()
+            if len(self.mImgDict.keys()) >= 2: # both boot and rec had found
+                return
                 
     def out(self, outDir = None):
         if outDir is None:
@@ -75,7 +83,7 @@ class pull(object):
         for itype in self.mImgDict.keys():
             outFile = os.path.join(outDir, "%s.img" %(itype))
             shutil.copyfile(self.mImgDict[itype], outFile)
-            Log.i("pull_boot_recovery", "Out: %s" %(outFile))
+            Log.i(LOG_TAG, "Out: %s" %(outFile))
         shutil.rmtree(self.mWorkdir)
     
     @staticmethod

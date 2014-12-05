@@ -10,6 +10,10 @@ import os
 import shutil
 import commands
 import tempfile
+import signal
+import subprocess
+import time
+
 
 try:
     import xml.etree.cElementTree as ET
@@ -103,6 +107,7 @@ class BootimgParser:
 
     # Directory for temporary data storage.
     TEMP_DIR = tempfile.mkdtemp()
+    TIME_OUT = 10 # 5.0 seconds
 
     @staticmethod
     def tryUnpack(unpackTool, bootimg):
@@ -112,8 +117,22 @@ class BootimgParser:
 
         BootimgParser.clearTempDir()
 
-        cmd = "%s %s %s" %(commands.mkarg(unpackTool), commands.mkarg(bootimg), commands.mkarg(BootimgParser.TEMP_DIR))
-        (status, output) = commands.getstatusoutput(cmd)
+        cmd = "%s %s %s" %(unpackTool, bootimg, BootimgParser.TEMP_DIR)
+        p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        timeout=BootimgParser.TIME_OUT
+        while True:
+            if p.poll() != None:
+                status = p.poll()
+                break
+            timeout-=1
+            time.sleep(0.5)
+            if timeout <= 0:
+                status = -1
+                os.killpg(p.pid, signal.SIGTERM)
+                break
+
+        (output, erroutput) = p.communicate()
 
         # Debug code. Useless for release version
         BootimgParser.__debug("\nTry: %s" %cmd)

@@ -16,6 +16,8 @@ from pull import pull
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from formatters.log import Log
 
+LOG_TAG = "mtkpull"
+
 class mtkEntry(entry):
     def __init__(self, name, etr):
         self.mName = name
@@ -54,7 +56,7 @@ class mtkpull(pull):
         self.mFstabConfig = fstabconfig(mtkpull.getFstabconfigFile())
         self.mFstab = fstab(AndroidFile(mtkpull.MTK_DUMCHAR_INFO), self.mFstabConfig)
         
-        Log.d("mtkpull", "work dir: %s" %(self.mWorkdir))
+        Log.d(LOG_TAG, "work dir: %s" %(self.mWorkdir))
         
         self.mBootImg = os.path.join(self.mWorkdir, "boot.img")
         self.mRecoveryImg = os.path.join(self.mWorkdir, "recovery.img")
@@ -93,11 +95,12 @@ class mtkpull(pull):
 
     def __pull__(self):
         bootEntry = mtkEntry(imagetype.BOOT, self.mFstab.getEntry(imagetype.BOOT))
-        
+        Log.i(LOG_TAG, "Try to pull boot partition from device ...")
         adBoot = AndroidFile(bootEntry.mMp)
         adBoot.pull(self.mBootImg, bootEntry.mStart, bootEntry.mSize)
         
         recoveryEntry = mtkEntry(imagetype.RECOVERY, self.mFstab.getEntry(imagetype.RECOVERY))
+        Log.i(LOG_TAG, "Try to pull recovery partition from device ...")
         adRecovery = AndroidFile(recoveryEntry.mMp)
         adRecovery.pull(self.mRecoveryImg, recoveryEntry.mStart, recoveryEntry.mSize)
         

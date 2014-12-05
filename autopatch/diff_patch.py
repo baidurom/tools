@@ -50,17 +50,35 @@ class DiffPatch():
         splitters = Splitters()
         (target, older, newer) = splitters.aquire(self.mTarget, self.mOlder, self.mNewer)
 
+        # Delete the unnecessary part
+        for targetPart in target.getAllParts():
+            olderPart = older.match(targetPart)
+            newerPart = newer.match(targetPart)
+
+            # Case
+            # target older newer  action
+            #   o      o     x    delete
+            #   x      o     x    ignore
+            #   o      x     x    ignore
+            #   x      x     x    ignore
+
+            olderExists = os.path.exists(olderPart)
+            newerExists = os.path.exists(newerPart)
+            if olderExists and (not newerExists):
+                target.deletePart(targetPart)
+
+
         # Patch partitions one by one
         for newerPart in newer.getAllParts():
             targetPart = target.match(newerPart)
             olderPart  = older.match(newerPart)
 
             # Case
-            # target older   action
-            #   o      o     merge
-            #   o      x     replace
-            #   x      o     conflict
-            #   x      x     append
+            # target older newer  action
+            #   o      o     o    merge
+            #   o      x     o    replace
+            #   x      o     o    conflict
+            #   x      x     o    append
 
             targetExists = os.path.exists(targetPart)
             olderExists  = os.path.exists(olderPart)
@@ -181,7 +199,7 @@ class SmaliSplitter:
         return self.mPartList
 
     def appendPart(self, part):
-        """ Append a part to list.
+        """ Append a part to list if not exist
         """
 
         try:
@@ -190,7 +208,20 @@ class SmaliSplitter:
             Log.d(TAG, "  [Add new part %s ] " % part)
             self.mPartList.append(part)
 
+    def deletePart(self, part):
+        """ Delete a part
+        """
+
+        try:
+            self.mPartList.remove(part)
+            Log.d(TAG, "  [Delete part %s ] " % part)
+        except:
+            Log.e(TAG, "SmaliSpliiter.deltePart(): can not find part %s" % part)
+
     def replacePart(self, targetPart, newerPart):
+        """ Replace the target with the newer.
+        """
+
         try:
             index = self.mPartList.index(targetPart)
             self.mPartList[index] = newerPart
@@ -198,8 +229,10 @@ class SmaliSplitter:
         except:
             Log.e(TAG, "SmaliSplitter.replacePart() can not find part %s" % targetPart)
 
-
     def conflictPart(self, olderPart, newerPart):
+        """ If older and newer are the same content, no conflict happen. Otherwise, mark out conflict.
+        """
+
         # Get older part content
         olderHandle = open(olderPart, "rb")
         olderContent = olderHandle.read()

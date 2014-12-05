@@ -191,12 +191,12 @@ done >&6
 ls framework/core.odex > /dev/null
 if [ $? -eq 0 ] 
 then
-    classpath="core.jar:ext.jar:framework.jar:android.policy.jar:services.jar"
+    #classpath="core.jar:ext.jar:framework.jar:android.policy.jar:services.jar"
     if [ $1 = '-a' ]
     then
-        deodex_one_file -a $apilevel $classpath framework/core.odex jar
+        deodex_one_file -a $apilevel "" framework/core.odex jar
     else
-        deodex_one_file $classpath framework/core.odex jar
+        deodex_one_file "" framework/core.odex jar
     fi
 fi
 

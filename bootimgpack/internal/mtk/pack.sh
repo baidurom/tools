@@ -44,12 +44,12 @@ function pack_bootimg()
 		[ $? != 0 ] && exit 1
 	fi
 
-	$MKMTKBOOTIMG --kernel ./kernel --ramdisk ./ramdisk_root.img  --output out.img
+	$MKMTKBOOTIMG --kernel ./kernel --ramdisk ./ramdisk_root.img  --output pack.img
 	[ $? != 0 ] && exit 1
 
 	rm ramdisk.img ramdisk_root.img
 	cd $old_pwd
-	mv $BOOTDIR/out.img $OUTPUT
+	mv $BOOTDIR/pack.img $OUTPUT
 }
 
 # Check parameters

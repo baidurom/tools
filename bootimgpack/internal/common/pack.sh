@@ -34,12 +34,12 @@ function pack_bootimg()
 	BOOTBASE=$(cat ./base)
 	BOOTCMDLINE=$(cat ./cmdline)
 	BOOTPAGESIZE=$(cat ./pagesize)
-	$MKBOOTIMG --kernel ./kernel --cmdline "$BOOTCMDLINE" --pagesize "$BOOTPAGESIZE"  --base "$BOOTBASE" --ramdisk ./ramdisk.img --output out.img
+	$MKBOOTIMG --kernel ./kernel --cmdline "$BOOTCMDLINE" --pagesize "$BOOTPAGESIZE"  --base "$BOOTBASE" --ramdisk ./ramdisk.img --output pack.img
 	[ $? != 0 ] && exit 1
 
 	rm ramdisk.img
 	cd $old_pwd
-	mv $BOOTDIR/out.img $OUTPUT
+	mv $BOOTDIR/pack.img $OUTPUT
 }
 
 # Check parameters

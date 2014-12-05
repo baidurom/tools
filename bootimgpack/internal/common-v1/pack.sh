@@ -27,19 +27,23 @@ function pack_bootimg()
 	local old_pwd=`pwd`
 
 	cd $BOOTDIR
+	# chmod for baidu serviceext
+	[ -f RAMDISK/sbin/serviceext ] && chmod 750 RAMDISK/sbin/serviceext
+
 	$PACK_INITRD -f newinitrd.img
 	[ $? != 0 ] && exit 1
 
 	if [ -e secondstage ]; then
-		$ABOOTIMG --create out.img -f bootimg.cfg -k zImage -r newinitrd.img -s secondstage
+		$ABOOTIMG --create pack.img -f bootimg.cfg -k zImage -r newinitrd.img -s secondstage
 		[ $? != 0 ] && exit 1
 	else
-		$ABOOTIMG --create out.img -f bootimg.cfg -k zImage -r newinitrd.img
+		$ABOOTIMG --create pack.img -f bootimg.cfg -k zImage -r newinitrd.img
 		[ $? != 0 ] && exit 1
 	fi
+	rm -f newinitrd.img
 
 	cd $old_pwd
-	mv $BOOTDIR/out.img $OUTPUT
+	mv $BOOTDIR/pack.img $OUTPUT
 }
 
 # Check parameters
