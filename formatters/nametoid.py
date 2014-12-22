@@ -19,6 +19,7 @@ class nametoid(object):
     classdocs
     '''
     mIdToNameDict = {}
+    CONST_LEN = len('const/high16')
 
     def __init__(self, xmlPath, inDir):
         '''
@@ -80,9 +81,15 @@ class nametoid(object):
             arrayStr = '0x%st 0x%st 0x%st 0x%st' % (arrayId[-2:], arrayId[-4:-2], arrayId[-6:-4], arrayId[-8:-6])
         return arrayStr.replace('0x0', '0x')
 
+    def getHigh16Name(self, high16Str):
+        idx = high16Str.index('#')
+        hName = high16Str[idx:]
+        return (hName,high16Str[0:idx])
+
     def nametoid(self):
         normalNameRule = re.compile(r'#[^ \t\n]*@[^ \t\n]*#t')
         arrayNameRule = re.compile(r'#[^ \t\n]*@[^ \t\n]*#a')
+        high16NameRule = re.compile(r'const/high16[ ]*v[0-9][0-9]*,[ ]*#[^ \t\n]*@[^ \t\n]*#h')
 
         for smaliFile in self.smaliFileList:
 #           print "start modify: %s" % smaliFile
@@ -90,7 +97,7 @@ class nametoid(object):
             fileStr = sf.read()
             modify = False
 
-            for matchArrName in  arrayNameRule.findall(fileStr):
+            for matchArrName in  list(set(arrayNameRule.findall(fileStr))):
                 arrId = self.nameToIdMap.get(matchArrName[1:-2], None)
                 if arrId is not None:
                     newArrIdStr = self.getArrayStr(arrId)
@@ -98,12 +105,24 @@ class nametoid(object):
                     modify = True
                     Log.d(">>> change array name from %s to id %s" % (matchArrName[1:-2], newArrIdStr))
 
-            for matchName in normalNameRule.findall(fileStr):
+            for matchName in list(set(normalNameRule.findall(fileStr))):
                 newId = self.nameToIdMap.get(matchName[1:-2], None)
                 if newId is not None:
                     fileStr = fileStr.replace(matchName, newId)
                     modify = True
                     Log.d(">>> change name from %s to id %s" % (matchName[1:-2], newId))
+
+            for matchHighName in list(set(high16NameRule.findall(fileStr))):
+                (hName, preStr) = self.getHigh16Name(matchHighName)
+                newId = self.nameToIdMap.get(hName[1:-2], None)
+                if newId is not None:
+                    if newId[-4:] != '0000':
+                        newStr = r'const%s%s' % (preStr[nametoid.CONST_LEN:], newId)
+                    else:
+                        newStr = r'%s%s' % (preStr, newId[:-4])
+                    fileStr = fileStr.replace(matchHighName, newStr)
+                    Log.d(">>> change name from %s to id %s" % (matchHighName, newStr))
+                    modify = True
 
             if modify is True:
                 sf.seek(0, 0)

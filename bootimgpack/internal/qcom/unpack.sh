@@ -36,7 +36,6 @@ function check_result()
 	[ ! -e $OUTPUT/dt.img ] && exit 1	
 	[ ! -e $OUTPUT/zImage ] && exit 1
 	[ ! -e $OUTPUT/RAMDISK/init.rc ] && exit 1
-	[ ! -e $OUTPUT/RAMDISK/init.environ.rc ] && exit 1
 }
 
 

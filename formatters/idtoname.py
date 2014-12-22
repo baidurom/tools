@@ -71,9 +71,15 @@ class idtoname(object):
         arrayId = "0x%s" % (arrayId.replace('x', '0'))
         return arrayId.replace('0x0', '0x')
 
+    def getIdByHigh16(self, high16Str):
+        idx = high16Str.index('0x')
+        rId = '%s%s' % (high16Str[idx:], '0000')
+        return (rId,high16Str[0:idx])
+
     def idtoname(self):
         normalIdRule = re.compile(r'0x(?:[1-9]|7f)[0-1][0-9a-f]{5}')
         arrayIdRule = re.compile(r'(?:0x[0-9a-f]{1,2}t ){3}0x(?:[1-9]|7f)t')
+        high16IdRule = re.compile(r'const/high16[ ]*v[0-9][0-9]*,[ ]*0x(?:[1-9]|7f)[0-1][0-9a-f]')
 
         for smaliFile in self.smaliFileList:
             #print "start modify: %s" % smaliFile
@@ -81,20 +87,27 @@ class idtoname(object):
             fileStr = sf.read()
             modify = False
 
-            for matchId in normalIdRule.findall(fileStr):
+            for matchId in list(set(normalIdRule.findall(fileStr))):
                 name = self.idToNameMap.get(matchId, None)
                 if name is not None:
                     fileStr = fileStr.replace(matchId, r'#%s#t' % name)
                     modify = True
                     Log.d("change id from %s to name %s" % (matchId, name))
 
-            for matchArrIdStr in  arrayIdRule.findall(fileStr):
+            for matchArrIdStr in  list(set(arrayIdRule.findall(fileStr))):
                 matchArrId = self.getArrayId(matchArrIdStr)
                 arrName = self.idToNameMap.get(matchArrId, None)
                 if arrName is not None:
                     fileStr = fileStr.replace(matchArrIdStr, r'#%s#a' % arrName)
                     modify = True
                     Log.d("change array id from %s to name %s" % (matchArrIdStr, arrName))
+
+            for matchHigh16IdStr in list(set(high16IdRule.findall(fileStr))):
+                (rId, preStr) = self.getIdByHigh16(matchHigh16IdStr)
+                name = self.idToNameMap.get(rId, None)
+                if name is not None:
+                    fileStr = fileStr.replace(matchHigh16IdStr, r'%s#%s#h' % (preStr, name))
+                    modify = True
 
             if modify is True:
                 sf.seek(0, 0)
