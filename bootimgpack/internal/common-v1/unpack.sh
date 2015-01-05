@@ -43,11 +43,10 @@ function unpack_bootimg()
 	$UNPACK_INITRD
 	[ $? != 0 ] && exit 1
 
-	rm -rf boot.img
+	rm -f initrd.img boot.img
 
 	# Remove the bootsize
-	mv bootimg.cfg bootimg.cfg~
-	sed {1d} bootimg.cfg~ > bootimg.cfg
+	sed -i {1d} bootimg.cfg
 
 	# export LIBC_FATAL_STDERR_=$tmp_stderr
 	cd $old_pwd
